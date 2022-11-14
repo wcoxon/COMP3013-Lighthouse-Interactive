@@ -23,7 +23,7 @@ void AGame_Spawner::BeginPlay()
 		FRotator SpawnRotate = GetActorRotation();
 
 		APawn* CharacterPawn = GetWorld()->SpawnActor<APawn>(Character, SpawnPoint, SpawnRotate);
-		//CharacterPawn->SetActorScale3D(FVector(PlayerSize));
+		CharacterPawn->SetActorScale3D(FVector(PlayerSize));
 
 		SavedController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 		SavedController->Possess(CharacterPawn);
