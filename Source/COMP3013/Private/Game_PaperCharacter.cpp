@@ -36,7 +36,6 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	CharacterFlipbook->BoundsScale = 10.0f;
 	
 	//Collider Settings
-	CharacterCollider->SetCapsuleHalfHeight(6.6f);
 	CharacterCollider->SetCapsuleRadius(6.6f);
 
 	//Movement System Settings
@@ -64,10 +63,11 @@ void AGame_PaperCharacter::BeginPlay()
 	MovingRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/WalkRight_Anim.WalkRight_Anim"), NULL, LOAD_None, NULL);
 	CharacterFlipbook->SetFlipbook(IdleDownAnim);
 	CharacterFlipbook->CastShadow = true;
-
-	//Collider Settings fix
+	
+	//fix collider
 	CharacterCollider->SetCapsuleHalfHeight(6.6f);
-
+	SetActorScale3D(FVector(10));
+	
 	//Make character face camera at all times
 	FRotator SpringArmRotation = SpringArm->GetComponentRotation();
 	SpringArmRotation.Roll = -SpringArmRotation.Pitch;
