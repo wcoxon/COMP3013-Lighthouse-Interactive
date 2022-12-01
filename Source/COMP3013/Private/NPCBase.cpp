@@ -10,12 +10,12 @@
 #include "GenericPlatform/GenericPlatformCrashContext.h"
 #include "Kismet/GameplayStatics.h"
 #include "Math/Vector.h"
-
+#include "Engine/World.h"
 
 
 ANPCBase::ANPCBase()
 {
-	coneRadius = 500.0;
+	coneRadius = 1000.0;
 	coneAngle = 45.0;
 	//coneDirection = FVector2D(0.0,1.0);
 	CharacterCollider->SetCapsuleRadius(6.6f);
@@ -29,17 +29,30 @@ ANPCBase::ANPCBase()
 
 bool ANPCBase::detectsPlayer()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("%s"),*FVector(abs(std::atan2(player->GetActorLocation().Y-GetActorLocation().Y,player->GetActorLocation().X-GetActorLocation().X)-std::atan2(coneDirection.Y,coneDirection.X))).ToString());
 	
 	if(FVector::Distance(player->GetActorLocation(),GetActorLocation())>coneRadius)
 	{
 		return false;
 	}
-	if(abs(std::atan2(player->GetActorLocation().Y-GetActorLocation().Y,player->GetActorLocation().X-GetActorLocation().X)-std::atan2(coneDirection.Y,coneDirection.X))<0.523598775598)
+	if(abs(std::atan2(player->GetActorLocation().Y-GetActorLocation().Y,player->GetActorLocation().X-GetActorLocation().X)-std::atan2(coneDirection.Y,coneDirection.X))>0.523598775598)
 	{
-		return true;
+		return false;
 	}
-	return false;
+	FHitResult hit;
+	//const FName TraceTag("MyTraceTag");
+
+	//GetWorld()->DebugDrawTraceTag = TraceTag;
+
+	//FCollisionQueryParams CollisionParams;
+	//CollisionParams.TraceTag = TraceTag;
+	bool actorHit = GetWorld()->LineTraceSingleByChannel(hit,GetActorLocation(),player->GetActorLocation(),ECC_Visibility,FCollisionQueryParams(),FCollisionResponseParams());
+	
+	if(actorHit && hit.GetActor())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HIT %s"),*hit.GetActor()->GetName());
+		return false;
+	}
+	return true;
 	
 }
 
@@ -51,10 +64,6 @@ void ANPCBase::BeginPlay()
 	SetActorScale3D(FVector(10));
 	CharacterFlipbook->SetWorldRotation(FRotator(0.0f, 0.0f, 40.0f));
 	player = UGameplayStatics::GetPlayerPawn(GetWorld(),0);
-	if(player!=NULL)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("Hello"));
-	}
 }
 
 
