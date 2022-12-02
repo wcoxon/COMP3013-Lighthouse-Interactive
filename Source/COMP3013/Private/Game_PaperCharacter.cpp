@@ -2,6 +2,8 @@
 
 
 #include "Game_PaperCharacter.h"
+
+#include "Item_Base.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperFlipbook.h"
 #include "Camera/CameraComponent.h"
@@ -9,6 +11,8 @@
 #include "FramePro/FramePro.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 // Called when the game starts or when spawned
 AGame_PaperCharacter::AGame_PaperCharacter()
@@ -18,17 +22,24 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	//Construct Camera & Arm
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
+	HeldItem = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldItem"));
 
 	//Attach Components
 	SpringArm->SetupAttachment(CharacterCollider);
 	Camera->SetupAttachment(SpringArm,USpringArmComponent::SocketName);
-
+	HeldItem->SetupAttachment(CharacterCollider);
+	
 	//Spring Arm Settings
 	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, -30.0f, 30.0f), FRotator(-40.0f, 90.0f, 0.0f));
-	SpringArm->TargetArmLength = 400.0f;
+	SpringArm->TargetArmLength = 600.0f;
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->CameraLagSpeed = 6.0f;
 	SpringArm->bDoCollisionTest = false;
+
+	//HeldItemLocation
+	HeldItem->SetRelativeLocationAndRotation(FVector(0, 0, 15), FRotator(0, 0, 90));
+	HeldItem->SetRelativeScale3D(FVector(0.15f,0.15f,0.15f));
+	HeldItem->CastShadow = false;
 
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
@@ -46,6 +57,7 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	CharacterMovementComp->MaxAcceleration = 8000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 50.0f;
 	
+	
 }
 
 void AGame_PaperCharacter::BeginPlay()
@@ -53,14 +65,14 @@ void AGame_PaperCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	//Grab character animations
-	IdleDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/Idle_Anim.Idle_Anim"), NULL, LOAD_None, NULL);
-	IdleUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/UpIdle_Anim.UpIdle_Anim"), NULL, LOAD_None, NULL);
-	IdleLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/LeftIdle_Anim.LeftIdle_Anim"), NULL, LOAD_None, NULL);
-	IdleRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/RightIdle_Anim.RightIdle_Anim"), NULL, LOAD_None, NULL);
-	MovingDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/WalkDown_Anim.WalkDown_Anim"), NULL, LOAD_None, NULL);
-	MovingUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/WalkUp_Anim.WalkUp_Anim"), NULL, LOAD_None, NULL);
-	MovingLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/WalkLeft_Anim.WalkLeft_Anim"), NULL, LOAD_None, NULL);
-	MovingRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/PrototypeAssets/WalkRight_Anim.WalkRight_Anim"), NULL, LOAD_None, NULL);
+	IdleDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/Idle_Anim.Idle_Anim"), NULL, LOAD_None, NULL);
+	IdleUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/UpIdle_Anim.UpIdle_Anim"), NULL, LOAD_None, NULL);
+	IdleLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/LeftIdle_Anim.LeftIdle_Anim"), NULL, LOAD_None, NULL);
+	IdleRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/RightIdle_Anim.RightIdle_Anim"), NULL, LOAD_None, NULL);
+	MovingDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkDown_Anim.WalkDown_Anim"), NULL, LOAD_None, NULL);
+	MovingUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkUp_Anim.WalkUp_Anim"), NULL, LOAD_None, NULL);
+	MovingLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkLeft_Anim.WalkLeft_Anim"), NULL, LOAD_None, NULL);
+	MovingRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkRight_Anim.WalkRight_Anim"), NULL, LOAD_None, NULL);
 	CharacterFlipbook->SetFlipbook(IdleDownAnim);
 	CharacterFlipbook->CastShadow = true;
 	
@@ -121,6 +133,7 @@ void AGame_PaperCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 	Super::SetupPlayerInputComponent(InputComponents);
 	
 	// Bind the controls
+	InputComponents->BindAction("Pickup", IE_Pressed, this, &AGame_PaperCharacter::Pickup);
 	InputComponents->BindAxis("MoveX", this, &AGame_PaperCharacter::Move_XAxis);
 	InputComponents->BindAxis("MoveY", this, &AGame_PaperCharacter::Move_YAxis);
 }
@@ -143,4 +156,25 @@ void AGame_PaperCharacter::Move_YAxis(float AxisValue)
 	// Move at 100 units per second right or left
 	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
 	this->AddMovementInput(this->GetActorRightVector() * CurrentVelocity.Y);
+}
+
+void AGame_PaperCharacter::Pickup()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Some debug message!"));	
+	if (P_HeldItem == "")
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Somessasd debug message!"));	
+		TArray<AActor*> Result;
+		GetOverlappingActors(Result, AItem_Base::StaticClass());
+		for (auto Actor : Result)
+		{
+			if (UKismetSystemLibrary::DoesImplementInterface(Actor, UInteraction::StaticClass()))
+			{
+				AItem_Base* CurrentItem = Cast<AItem_Base>(Actor);
+				P_HeldItem = CurrentItem->GetItemName();
+				HeldItem->SetStaticMesh(CurrentItem->GetItemMesh());
+				break;
+			}
+		}
+	}
 }

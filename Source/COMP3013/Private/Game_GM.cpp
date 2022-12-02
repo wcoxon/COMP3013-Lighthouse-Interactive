@@ -3,3 +3,12 @@
 
 #include "Game_GM.h"
 
+#include "PlayerHUD.h"
+
+
+AGame_GM::AGame_GM()
+{
+	PrimaryActorTick.bCanEverTick = false;
+
+	HUDClass = APlayerHUD::StaticClass();
+}

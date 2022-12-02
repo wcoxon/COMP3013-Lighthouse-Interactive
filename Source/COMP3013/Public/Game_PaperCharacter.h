@@ -46,6 +46,10 @@ public:
 	//Camera
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* Camera;
+
+	//HeldItemMesh
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* HeldItem;
 	
 	//Animations
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
@@ -78,12 +82,17 @@ public:
 	//Player input functions and data
 	void Move_XAxis(float AxisValue);
 	void Move_YAxis(float AxisValue);
+	void Pickup();
 	FVector CurrentVelocity;
 	bool PlayerStateChange = false;
 
 	//Direction Enum
 	UPROPERTY(VisibleAnywhere, Category = Enums)
 	Direction PlayerDirection = Direction::Down;
+
+	//PLAYER VARS
+	UPROPERTY(VisibleAnywhere, Category = Stats)
+	FString P_HeldItem = "";
 	
 protected:
 	

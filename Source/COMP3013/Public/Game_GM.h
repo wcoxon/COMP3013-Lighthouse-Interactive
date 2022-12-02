@@ -13,5 +13,9 @@ UCLASS()
 class COMP3013_API AGame_GM : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	AGame_GM();
+	
 	
 };
