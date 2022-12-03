@@ -4,6 +4,7 @@
 
 
 #include "CoreMinimal.h"
+#include "Item.h"
 #include "PaperCharacter.h"
 #include "PaperFlipbookComponent.h"
 #include "Camera/CameraComponent.h"
@@ -47,6 +48,10 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* Camera;
 
+	//Inventory
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
+	class UPlayerInvComponent* Inventory;
+
 	//HeldItemMesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* HeldItem;
@@ -83,8 +88,14 @@ public:
 	void Move_XAxis(float AxisValue);
 	void Move_YAxis(float AxisValue);
 	void Pickup();
+	void OpenInventory();
+	void Conceal();
 	FVector CurrentVelocity;
 	bool PlayerStateChange = false;
+
+	//Direct asset reference -> Inventory HUD widget
+	class UClass* HUDWidgetClass;
+	class UUserWidget* HUDWidgetMain;
 
 	//Direction Enum
 	UPROPERTY(VisibleAnywhere, Category = Enums)
@@ -93,6 +104,12 @@ public:
 	//PLAYER VARS
 	UPROPERTY(VisibleAnywhere, Category = Stats)
 	FString P_HeldItem = "";
+
+	UPROPERTY(VisibleAnywhere, Category = Stats)
+	UItem* Current_HeldItem;
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void Destroy(UItem* Item);
 	
 protected:
 	

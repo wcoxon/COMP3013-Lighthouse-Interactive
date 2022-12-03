@@ -13,15 +13,19 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "PlayerInvComponent.h"
+#include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 // Called when the game starts or when spawned
 AGame_PaperCharacter::AGame_PaperCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	//Construct Camera & Arm
+	//Construct Components
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
+	Inventory = CreateDefaultSubobject<UPlayerInvComponent>(TEXT("Inventory"));
 	HeldItem = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldItem"));
 
 	//Attach Components
@@ -56,8 +60,18 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	CharacterMovementComp->bRequestedMoveUseAcceleration = false;
 	CharacterMovementComp->MaxAcceleration = 8000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 50.0f;
+
+	//Assign HUD element
+	static ConstructorHelpers::FClassFinder<UUserWidget> hudWidgetObj (TEXT ("/Game/UserInterface/WIDGET_Inventory"));
+	if (hudWidgetObj.Succeeded ()) HUDWidgetClass = hudWidgetObj.Class;
+	else HUDWidgetClass = nullptr;
 	
 	
+}
+
+void AGame_PaperCharacter::Destroy(UItem* Item)
+{
+	if (Item) Item->Destroy(this);
 }
 
 void AGame_PaperCharacter::BeginPlay()
@@ -134,6 +148,8 @@ void AGame_PaperCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 	
 	// Bind the controls
 	InputComponents->BindAction("Pickup", IE_Pressed, this, &AGame_PaperCharacter::Pickup);
+	InputComponents->BindAction("Inventory", IE_Pressed, this, &AGame_PaperCharacter::OpenInventory);
+	InputComponents->BindAction("Conceal", IE_Pressed, this, &AGame_PaperCharacter::Conceal);
 	InputComponents->BindAxis("MoveX", this, &AGame_PaperCharacter::Move_XAxis);
 	InputComponents->BindAxis("MoveY", this, &AGame_PaperCharacter::Move_YAxis);
 }
@@ -161,7 +177,7 @@ void AGame_PaperCharacter::Move_YAxis(float AxisValue)
 void AGame_PaperCharacter::Pickup()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Some debug message!"));	
-	if (P_HeldItem == "")
+	if (Current_HeldItem == nullptr)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Somessasd debug message!"));	
 		TArray<AActor*> Result;
@@ -172,9 +188,34 @@ void AGame_PaperCharacter::Pickup()
 			{
 				AItem_Base* CurrentItem = Cast<AItem_Base>(Actor);
 				P_HeldItem = CurrentItem->GetItemName();
+				Current_HeldItem = CurrentItem->ItemToGive;
 				HeldItem->SetStaticMesh(CurrentItem->GetItemMesh());
 				break;
 			}
 		}
+	}
+}
+
+void AGame_PaperCharacter::OpenInventory()
+{
+	if (HUDWidgetClass)
+	{
+		//Set movement to nothing when entering the Inventory
+		this->AddMovementInput(this->GetActorForwardVector() * 0);
+		this->AddMovementInput(this->GetActorRightVector() * 0);
+
+		//Create inventory widget + swap inputs n stuff
+		HUDWidgetMain = CreateWidget<UUserWidget>(GetWorld(), HUDWidgetClass);
+		HUDWidgetMain->AddToViewport();
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->bShowMouseCursor = true;
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetInputMode(FInputModeUIOnly());
+	}
+}
+
+void AGame_PaperCharacter::Conceal()
+{
+	if (Current_HeldItem != nullptr)
+	{
+		Inventory->AddItem(Current_HeldItem);
 	}
 }

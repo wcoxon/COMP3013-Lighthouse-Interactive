@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Interaction.h"
+#include "Item.h"
 #include "Components/BoxComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "GameFramework/Actor.h"
@@ -18,6 +19,9 @@ public:
 	// Sets default values for this actor's properties
 	AItem_Base();
 
+	UPROPERTY(EditAnywhere)
+	UItem* ItemToGive;
+	
 	UPROPERTY(EditAnywhere)
 	UStaticMesh* ItemMesh;
 	
