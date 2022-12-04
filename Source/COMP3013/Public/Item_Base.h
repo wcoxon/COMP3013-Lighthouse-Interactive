@@ -22,16 +22,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	UItem* ItemToGive;
 	
-	UPROPERTY(EditAnywhere)
-	UStaticMesh* ItemMesh;
-	
 	//Bounds Box
 	UPROPERTY(VisibleAnywhere)
 	UBoxComponent* BoundsBox;
-
-	//Bounds Box
-	UPROPERTY(EditAnywhere)
-	FString ItemName = "";
 
 	UPROPERTY(EditAnywhere)
 	UTextRenderComponent* Text;
@@ -43,17 +36,9 @@ public:
 
 	UFUNCTION()
 	void TextOverlapExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	
-	FString GetItemName();
-	UStaticMesh* GetItemMesh();
-	
-	
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 };

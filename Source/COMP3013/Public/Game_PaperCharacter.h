@@ -28,6 +28,8 @@ enum class Direction : uint8 {
 	MovingRight        UMETA(DisplayName="Right")
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPickupItem);
+
 UCLASS()
 class COMP3013_API AGame_PaperCharacter : public APaperCharacter
 {
@@ -54,7 +56,7 @@ public:
 
 	//HeldItemMesh
 	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* HeldItem;
+	UStaticMeshComponent* Mesh_HeldItem;
 	
 	//Animations
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
@@ -105,11 +107,14 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Stats)
 	FString P_HeldItem = "";
 
-	UPROPERTY(VisibleAnywhere, Category = Stats)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
 	UItem* Current_HeldItem;
 	
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void Destroy(UItem* Item);
+
+	UPROPERTY(BlueprintAssignable)
+	FPickupItem PickupItemEvent;
 	
 protected:
 	

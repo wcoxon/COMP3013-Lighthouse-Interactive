@@ -33,10 +33,4 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<UItem*> Items;
 	
-
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-	
-		
 };

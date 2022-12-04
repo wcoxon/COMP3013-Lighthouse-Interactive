@@ -37,13 +37,3 @@ bool UPlayerInvComponent::RemoveItem(UItem* Item)
 	return false;
 }
 
-
-// Called when the game starts
-void UPlayerInvComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-	
-}
-
