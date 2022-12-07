@@ -5,7 +5,11 @@
 
 #include <string>
 #include <valarray>
+
+#include "NavigationPath.h"
 #include "PaperFlipbook.h"
+#include "RenderGraphResources.h"
+#include "VectorTypes.h"
 #include "Components/CapsuleComponent.h"
 #include "GenericPlatform/GenericPlatformCrashContext.h"
 #include "Kismet/GameplayStatics.h"
@@ -39,19 +43,17 @@ bool ANPCBase::detectsPlayer()
 		return false;
 	}
 	FHitResult hit;
-	//const FName TraceTag("MyTraceTag");
-
-	//GetWorld()->DebugDrawTraceTag = TraceTag;
-
-	//FCollisionQueryParams CollisionParams;
-	//CollisionParams.TraceTag = TraceTag;
+	
 	bool actorHit = GetWorld()->LineTraceSingleByChannel(hit,GetActorLocation(),player->GetActorLocation(),ECC_Visibility,FCollisionQueryParams(),FCollisionResponseParams());
 	
 	if(actorHit && hit.GetActor())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HIT %s"),*hit.GetActor()->GetName());
 		return false;
 	}
+
+	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetActorLocation(),player->GetNavAgentLocation());
+	tpath->PathPoints.RemoveAt(0);
 	return true;
 	
 }
@@ -64,8 +66,20 @@ void ANPCBase::BeginPlay()
 	SetActorScale3D(FVector(10));
 	CharacterFlipbook->SetWorldRotation(FRotator(0.0f, 0.0f, 40.0f));
 	player = UGameplayStatics::GetPlayerPawn(GetWorld(),0);
+	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetActorLocation(),player->GetNavAgentLocation());
+	
 }
 
+void ANPCBase::moveTowardsPoint(FVector point)
+{
+	float speed = 5;
+	FVector3d direction = (point - GetActorLocation()).GetSafeNormal();
+	//direction.GetSafeNormal();
+	coneDirection=FVector2d(direction);
+	SetActorLocation(GetActorLocation()+ FVector3d(1,1,0)*(direction*speed));
+	
+}
 
 void ANPCBase::Tick(float DeltaSeconds)
 {
@@ -80,6 +94,12 @@ void ANPCBase::Tick(float DeltaSeconds)
 	{
 		currentState = playerHidden;
 		CharacterFlipbook->SetSpriteColor(FLinearColor(1,1,1));
+	}
+	if(!tpath->PathPoints.IsEmpty())
+	{
+		if(FVector2d::Distance(FVector2d(GetActorLocation()),FVector2d(tpath->PathPoints[0]))<1) tpath->PathPoints.RemoveAt(0);
+		else moveTowardsPoint(tpath->PathPoints[0]);
+		
 	}
 }
 
