@@ -7,6 +7,8 @@
 #include "Game_Spawner.h"
 #include "PaperCharacter.h"
 #include "NavigationSystem.h"
+#include "Components/RectLightComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "NPCBase.generated.h"
 
 /**
@@ -29,9 +31,10 @@ public:
 	ANPCBase();
 	virtual void Tick(float DeltaSeconds) override;
 	bool detectsPlayer();
-	void moveTowardsPoint(FVector point);
+	UFUNCTION()
+	void hearPlayer();
+	void moveTowardsPoint(FVector point,float distance);
 	AIState currentState;
-
 	UPROPERTY(EditAnywhere)
 	FVector2D coneDirection;
 protected:
@@ -39,12 +42,16 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 private:
-	
+	float moveSpeed;
 	float coneRadius;
 	float coneAngle;
+	UPROPERTY()
 	UNavigationPath *tpath;
 	UPaperFlipbookComponent* CharacterFlipbook = GetSprite();
 	UCapsuleComponent* CharacterCollider = GetCapsuleComponent();
-	APawn* player;
+	UPROPERTY(VisibleAnywhere)
+	USpotLightComponent* coneLight;
+	UPROPERTY()
+	AGame_PaperCharacter* player;
 	
 };

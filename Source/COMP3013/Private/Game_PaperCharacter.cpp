@@ -180,6 +180,8 @@ void AGame_PaperCharacter::Move_YAxis(float AxisValue)
 /** When player in item_base zone, place item in held_item */
 void AGame_PaperCharacter::Pickup()
 {
+	UE_LOG(LogTemp, Warning, TEXT("broadcasting"));
+	PickupItemEvent.Broadcast();
 	if (Current_HeldItem == nullptr)
 	{
 		TArray<AActor*> Result;
