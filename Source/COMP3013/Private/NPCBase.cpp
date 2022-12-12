@@ -115,12 +115,14 @@ void ANPCBase::Tick(float DeltaSeconds)
 	if(detectsPlayer())
 	{
 		//currentState = seesPlayer;
-		CharacterFlipbook->SetSpriteColor(FLinearColor(1,0.0,0.0));
+		//CharacterFlipbook->SetSpriteColor(FLinearColor(1,0.0,0.0));
+		coneLight->SetLightColor(FLinearColor(1,0.0,0.0));
 	}
 	else
 	{
 		//currentState = playerHidden;
-		CharacterFlipbook->SetSpriteColor(FLinearColor(1,1,1));
+		//CharacterFlipbook->SetSpriteColor(FLinearColor(1,1,1));
+		coneLight->SetLightColor(FLinearColor(1,1,1));
 	}
 	if(tpath->PathPoints.Num()>1)
 	{
