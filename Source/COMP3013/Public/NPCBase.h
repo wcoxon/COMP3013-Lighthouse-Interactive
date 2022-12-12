@@ -3,11 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Agent_PaperCharacter.h"
 #include "Game_PaperCharacter.h"
-#include "Game_Spawner.h"
 #include "PaperCharacter.h"
 #include "NavigationSystem.h"
-#include "Components/RectLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "NPCBase.generated.h"
 
@@ -23,7 +22,7 @@ enum AIState
 };
 
 UCLASS()
-class COMP3013_API ANPCBase : public APaperCharacter
+class COMP3013_API ANPCBase : public AAgent_PaperCharacter
 {
 	GENERATED_BODY()
 
@@ -33,7 +32,7 @@ public:
 	bool detectsPlayer();
 	UFUNCTION()
 	void hearPlayer();
-	void moveTowardsPoint(FVector point,float distance);
+	void moveTowards(FVector destination,float distance) override;
 	AIState currentState;
 	UPROPERTY(EditAnywhere)
 	FVector2D coneDirection;

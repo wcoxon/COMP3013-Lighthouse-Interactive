@@ -3,12 +3,11 @@
 
 #include "NPCBase.h"
 
-#include <string>
 #include <valarray>
-
+#include "PaperFlipbookComponent.h"
 #include "NavigationPath.h"
+
 #include "PaperFlipbook.h"
-#include "RenderGraphResources.h"
 #include "VectorTypes.h"
 #include "Components/CapsuleComponent.h"
 #include "GenericPlatform/GenericPlatformCrashContext.h"
@@ -27,7 +26,6 @@ ANPCBase::ANPCBase()
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
-	CharacterCollider->SetRenderCustomDepth(true);
 	CharacterFlipbook->BoundsScale = 10.0f;
 	currentState = playerHidden;
 }
@@ -71,40 +69,53 @@ void ANPCBase::hearPlayer()
 void ANPCBase::BeginPlay()
 {
 	Super::BeginPlay();
-	CharacterCollider->SetCapsuleHalfHeight(6.6f);
-	SetActorScale3D(FVector(10));
-	CharacterFlipbook->SetWorldRotation(FRotator(0.0f, 0.0f, 40.0f));
+	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkLeft_Anim.WalkLeft_Anim"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkRight_Anim.WalkRight_Anim"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkUp_Anim.WalkUp_Anim"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkDown_Anim.WalkDown_Anim"), NULL, LOAD_None, NULL));
+
+	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/LeftIdle_Anim.LeftIdle_Anim"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/RightIdle_Anim.RightIdle_Anim"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/UpIdle_Anim.UpIdle_Anim"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/Idle_Anim.Idle_Anim"), NULL, LOAD_None, NULL));
+
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
-	//player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetActorOfClass(GetWorld(),AGame_PaperCharacter::StaticClass()));
 	
 	player->PickupItemEvent.__Internal_AddDynamic(this,&ANPCBase::hearPlayer,TEXT("hearPlayer"));
 	
 	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
 	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),player->GetNavAgentLocation());
 
-	//coneLight->SetRelativeLocation(FVector(0,0,-6));
 	coneLight->SetInnerConeAngle(coneAngle);
 	coneLight->bUseInverseSquaredFalloff = 0;
 	coneLight->SetLightFalloffExponent(0.25);
 	coneLight->SetIntensity(5);
 	coneLight->SetAttenuationRadius(coneRadius);
-	//coneLight = NewObject<USpotLightComponent>();
-	//coneLight->SetupAttachment(CharacterCollider);
-	//coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotlightComponent"));
 	
 }
 
-void ANPCBase::moveTowardsPoint(FVector point,float distance)
+void ANPCBase::moveTowards(FVector destination,float distance)
 {
-	FVector3d displacement = point - GetNavAgentLocation();
+	FVector3d displacement = destination - GetNavAgentLocation();
 	if(displacement.Length()<distance)
 	{
 		SetActorLocation(GetActorLocation()+ FVector3d(1,1,0)*displacement);
 		return;
 	}
-	FVector3d direction = displacement.GetSafeNormal();
+	//FVector3d direction = displacement.GetSafeNormal();
+	direction = displacement.GetSafeNormal2D();
 	coneDirection=FVector2d(direction);
 	coneLight->SetRelativeRotation(FRotator(0,FMath::RadiansToDegrees(std::atan2(direction.Y,direction.X)),0));
+	if(abs(direction.Y)>abs(direction.X))
+	{
+		if(direction.Y>0) CharacterFlipbook->SetFlipbook(animations["walkUp"]);
+		else CharacterFlipbook->SetFlipbook(animations["walkDown"]);
+	}
+	else if(abs(direction.Y)<abs(direction.X))
+	{
+		if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["walkRight"]);
+		else CharacterFlipbook->SetFlipbook(animations["walkLeft"]);
+	}
 	SetActorLocation(GetActorLocation()+ FVector3d(1,1,0)*(direction*distance));
 }
 
@@ -115,21 +126,29 @@ void ANPCBase::Tick(float DeltaSeconds)
 	if(detectsPlayer())
 	{
 		//currentState = seesPlayer;
-		//CharacterFlipbook->SetSpriteColor(FLinearColor(1,0.0,0.0));
 		coneLight->SetLightColor(FLinearColor(1,0.0,0.0));
 	}
 	else
 	{
 		//currentState = playerHidden;
-		//CharacterFlipbook->SetSpriteColor(FLinearColor(1,1,1));
 		coneLight->SetLightColor(FLinearColor(1,1,1));
 	}
 	if(tpath->PathPoints.Num()>1)
 	{
-		moveTowardsPoint(tpath->PathPoints[1],moveSpeed*DeltaSeconds);
+		moveTowards(tpath->PathPoints[1],moveSpeed*DeltaSeconds);
 		if(FVector2d::Distance(FVector2d(GetNavAgentLocation()),FVector2d(tpath->PathPoints[1]))<1)
 		{
 			tpath->PathPoints.RemoveAt(0);
+			if(abs(direction.Y)>abs(direction.X))
+			{
+				if(direction.Y>0) CharacterFlipbook->SetFlipbook(animations["idleUp"]);
+				else CharacterFlipbook->SetFlipbook(animations["idleDown"]);
+			}
+			else if(abs(direction.Y)<abs(direction.X))
+			{
+				if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["idleRight"]);
+				else CharacterFlipbook->SetFlipbook(animations["idleLeft"]);
+			}
 		}
 	}
 }
