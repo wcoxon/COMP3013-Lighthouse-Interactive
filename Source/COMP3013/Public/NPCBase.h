@@ -18,7 +18,11 @@ enum AIState
 {
 	seesPlayer,
 	playerHidden,
-	patrol
+	patrol,
+	idle,
+	alerted,
+	searching
+	
 };
 
 UCLASS()
@@ -30,10 +34,11 @@ public:
 	ANPCBase();
 	virtual void Tick(float DeltaSeconds) override;
 	bool detectsPlayer();
+	void moveTowards(FVector destination,float deltaSec) override;
+	void turnTowards(FVector destination,float deltaSec);
 	UFUNCTION()
-	void hearPlayer();
-	void moveTowards(FVector destination,float distance) override;
-	AIState currentState;
+	void playerPickup();
+	//AIState currentState;
 	UPROPERTY(EditAnywhere)
 	FVector2D coneDirection;
 protected:
@@ -42,15 +47,25 @@ protected:
 	virtual void BeginPlay() override;
 private:
 	float moveSpeed;
+	float turnSpeed;
 	float coneRadius;
 	float coneAngle;
-	UPROPERTY()
-	UNavigationPath *tpath;
-	UPaperFlipbookComponent* CharacterFlipbook = GetSprite();
-	UCapsuleComponent* CharacterCollider = GetCapsuleComponent();
+	AIState currentState;
+	TArray<FVector> patrolPoints;
+	float waitCounter;
+
+	
 	UPROPERTY(VisibleAnywhere)
 	USpotLightComponent* coneLight;
 	UPROPERTY()
 	AGame_PaperCharacter* player;
+	UPROPERTY()
+	UNavigationPath *tpath;
+	
+	
+	UPaperFlipbookComponent* CharacterFlipbook = GetSprite();
+	UCapsuleComponent* CharacterCollider = GetCapsuleComponent();
+	
+	
 	
 };
