@@ -6,7 +6,7 @@
 #include <valarray>
 #include "PaperFlipbookComponent.h"
 #include "NavigationPath.h"
-
+#include "Components/AudioComponent.h"
 #include "PaperFlipbook.h"
 #include "VectorTypes.h"
 #include "Components/CapsuleComponent.h"
@@ -21,6 +21,8 @@ ANPCBase::ANPCBase()
 {
 	
 	coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("spotlightComp"));
+	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
+	
 	coneLight->SetupAttachment(CharacterCollider);
 	coneRadius = 2000.0;
 	coneAngle = 45.0;
@@ -87,7 +89,7 @@ void ANPCBase::BeginPlay()
 	float spriteRes = 96;
 	//the player animation frames are actually like 19 pixels above the bottom of the sprite, so this shifts it down
 	//to touch the floor
-	float spriteBottomMargin = 17;
+	float spriteBottomMargin = 16;
 	
 	//fix collider
 	CharacterCollider->SetCapsuleHalfHeight(spriteRes/2.0-spriteBottomMargin);
@@ -96,6 +98,11 @@ void ANPCBase::BeginPlay()
 	const float stridePixels = 70;
 	const float strideFrames = 16;
 	CharacterFlipbook->SetPlayRate(moveSpeed/(15*actorScale*stridePixels/strideFrames));
+
+
+	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
+	
+	
 	//finding player pawn and binding pickup delegate
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
 	player->PickupItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerPickup,TEXT("playerPickup"));
@@ -173,7 +180,12 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 		if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["walkRight"]);
 		else CharacterFlipbook->SetFlipbook(animations["walkLeft"]);
 	}
-	
+	if(CharacterFlipbook->GetPlaybackPositionInFrames()==13 || CharacterFlipbook->GetPlaybackPositionInFrames()==30)
+	{
+		audioSource->Stop();
+		audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
+		audioSource->Play();
+	}
 	SetActorLocation(GetActorLocation()+ FVector3d(1,1,0)*(direction*distance));
 }
 

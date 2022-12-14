@@ -23,9 +23,10 @@ public:
 	FVector direction;
 	UPROPERTY()
 	float moveSpeed;
-	
 	virtual void moveTowards(FVector destination,float distance);
 	
+	UPROPERTY(VisibleAnywhere)
+	UAudioComponent* audioSource;
 protected:
 	
 	// Called when the game starts or when spawned

@@ -15,6 +15,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "PlayerInvComponent.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Called when the game starts or when spawned
@@ -27,6 +28,8 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	Inventory = CreateDefaultSubobject<UPlayerInvComponent>(TEXT("Inventory"));
 	Mesh_HeldItem = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldItem"));
+	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
+	
 
 	//Attach Components
 	SpringArm->SetupAttachment(CharacterCollider);
@@ -48,13 +51,14 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
 	CharacterCollider->SetRenderCustomDepth(true);
-	//CharacterFlipbook->BoundsScale = 1.0f;
+
+	
 	
 	//Collider Settings
 	CharacterCollider->SetCapsuleRadius(25.0f);
 
 	//Movement System Settings
-	moveSpeed=800;
+	moveSpeed=700;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 8000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 50.0f;
@@ -97,8 +101,9 @@ void AGame_PaperCharacter::BeginPlay()
 	//to touch the floor
 	float spriteBottomMargin = 19;
 	//fix collider
-	CharacterCollider->SetCapsuleHalfHeight(spriteRes/2.0);
 	SetActorScale3D(FVector(actorScale));
+
+	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
 	
 	//Make character face camera at all times
 	FRotator SpringArmRotation = SpringArm->GetComponentRotation();
@@ -116,7 +121,12 @@ void AGame_PaperCharacter::BeginPlay()
 void AGame_PaperCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
+	if(CurrentVelocity.Length()>0 &&(CharacterFlipbook->GetPlaybackPositionInFrames()==10 || CharacterFlipbook->GetPlaybackPositionInFrames()==22))
+	{
+		audioSource->Stop();
+		audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
+		audioSource->Play();
+	}
 	switch(PlayerDirection)
 	{
 	case Direction::MovingUp:
