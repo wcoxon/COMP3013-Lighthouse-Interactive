@@ -19,6 +19,7 @@
 
 ANPCBase::ANPCBase()
 {
+	
 	coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("spotlightComp"));
 	coneLight->SetupAttachment(CharacterCollider);
 	coneRadius = 1000.0;
@@ -32,7 +33,6 @@ ANPCBase::ANPCBase()
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
 	CharacterFlipbook->BoundsScale = 10.0f;
-	currentState = playerHidden;
 }
 
 bool ANPCBase::detectsPlayer()
@@ -147,22 +147,7 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 	{
 		direction = displacement.GetSafeNormal2D();
 		turnTowards(destination,deltaSec);
-		//coneDirection=FVector2d(direction);
-		/*if(abs(direction.Y)>abs(direction.X))
-		{
-			if(direction.Y>0) CharacterFlipbook->SetFlipbook(animations["idleUp"]);
-			else CharacterFlipbook->SetFlipbook(animations["idleDown"]);
-		}
-		else if(abs(direction.Y)<abs(direction.X))
-		{
-			if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["idleRight"]);
-			else CharacterFlipbook->SetFlipbook(animations["idleLeft"]);
-		}*/
-		//return;
 	}
-	//direction=
-	//coneDirection=FVector2d(direction);
-	//coneLight->SetRelativeRotation(FRotator(0,FMath::RadiansToDegrees(std::atan2(direction.Y,direction.X)),0));
 
 	if(abs(direction.Y)>abs(direction.X))
 	{
@@ -196,18 +181,13 @@ void ANPCBase::Tick(float DeltaSeconds)
 		{
 			if(tpath->PathPoints.Last().Equals(patrolPoints[patrolIndex]))
 			{
-				//the destination is this patrolpoint
 				if(patrolPoints.Num()-1==patrolIndex)
 				{
-					//this destination is the last patrol point
-					//reverse patrol points
 					Algo::Reverse(patrolPoints);
 					patrolIndex=-1;
 				}
 				if(tpath->PathPoints.Num()==1)
 				{
-					//destination is reached
-					//set destination to the next patrol point
 					UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
 					tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),patrolPoints[patrolIndex+1]);
 				}
@@ -260,7 +240,6 @@ void ANPCBase::Tick(float DeltaSeconds)
 	
 	if(detectsPlayer())
 	{
-		//currentState = seesPlayer;
 		if(currentState==alerted)
 		{
 			coneLight->SetLightColor(FLinearColor(1,0.0,0.0));
@@ -269,7 +248,6 @@ void ANPCBase::Tick(float DeltaSeconds)
 	}
 	else
 	{
-		//currentState = playerHidden;
 		if(currentState==searching) coneLight->SetLightColor(FLinearColor(1,0.0,1.0));
 		else coneLight->SetLightColor(FLinearColor(1,1,1));
 	}

@@ -16,8 +16,6 @@
 
 enum AIState
 {
-	seesPlayer,
-	playerHidden,
 	patrol,
 	idle,
 	alerted,

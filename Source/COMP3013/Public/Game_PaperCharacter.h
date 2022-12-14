@@ -6,9 +6,11 @@
 #include "CoreMinimal.h"
 #include "Item.h"
 #include "PaperCharacter.h"
+#include "Agent_PaperCharacter.h"
 #include "PaperFlipbookComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+
 #include "Game_PaperCharacter.generated.h"
 
 /**
@@ -31,7 +33,7 @@ enum class Direction : uint8 {
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPickupItem);
 
 UCLASS()
-class COMP3013_API AGame_PaperCharacter : public APaperCharacter
+class COMP3013_API AGame_PaperCharacter : public AAgent_PaperCharacter
 {
 	GENERATED_BODY()
 

@@ -48,16 +48,14 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
 	CharacterCollider->SetRenderCustomDepth(true);
-	CharacterFlipbook->BoundsScale = 10.0f;
+	//CharacterFlipbook->BoundsScale = 1.0f;
 	
 	//Collider Settings
-	CharacterCollider->SetCapsuleRadius(6.6f);
+	CharacterCollider->SetCapsuleRadius(25.0f);
 
 	//Movement System Settings
-	//CharacterMovementComp->DefaultLandMovementMode = MOVE_Flying;
-	CharacterMovementComp->MaxFlySpeed = 300.0f;
-	CharacterMovementComp->BrakingDecelerationFlying = 4000.0f;
-	CharacterMovementComp->bRequestedMoveUseAcceleration = false;
+	moveSpeed=500;
+	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 8000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 50.0f;
 
@@ -65,7 +63,6 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	static ConstructorHelpers::FClassFinder<UUserWidget> hudWidgetObj (TEXT ("/Game/UserInterface/WIDGET_Inventory"));
 	if (hudWidgetObj.Succeeded ()) HUDWidgetClass = hudWidgetObj.Class;
 	else HUDWidgetClass = nullptr;
-	
 	
 }
 
@@ -79,27 +76,41 @@ void AGame_PaperCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	//Grab character animations
-	IdleDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/Idle_Anim.Idle_Anim"), NULL, LOAD_None, NULL);
+	IdleDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet97.RunSpriteSheet97"), NULL, LOAD_None, NULL);
 	IdleUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/UpIdle_Anim.UpIdle_Anim"), NULL, LOAD_None, NULL);
 	IdleLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/LeftIdle_Anim.LeftIdle_Anim"), NULL, LOAD_None, NULL);
 	IdleRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/RightIdle_Anim.RightIdle_Anim"), NULL, LOAD_None, NULL);
-	MovingDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkDown_Anim.WalkDown_Anim"), NULL, LOAD_None, NULL);
-	MovingUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkUp_Anim.WalkUp_Anim"), NULL, LOAD_None, NULL);
-	MovingLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkLeft_Anim.WalkLeft_Anim"), NULL, LOAD_None, NULL);
-	MovingRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkRight_Anim.WalkRight_Anim"), NULL, LOAD_None, NULL);
+	
+	MovingDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet97.RunSpriteSheet97"), NULL, LOAD_None, NULL);
+	MovingUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet99.RunSpriteSheet99"), NULL, LOAD_None, NULL);
+	MovingLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet98.RunSpriteSheet98"), NULL, LOAD_None, NULL);
+	MovingRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet100.RunSpriteSheet100"), NULL, LOAD_None, NULL);
+	
 	CharacterFlipbook->SetFlipbook(IdleDownAnim);
 	CharacterFlipbook->CastShadow = true;
-	
+
+	//rescale the actor by 3.5
+	float actorScale = 3.5;
+	//this sprite is 96x96
+	float spriteRes = 96;
+	//the player animation frames are actually like 19 pixels above the bottom of the sprite, so this shifts it down
+	//to touch the floor
+	float spriteBottomMargin = 19;
 	//fix collider
-	CharacterCollider->SetCapsuleHalfHeight(6.6f);
-	SetActorScale3D(FVector(10));
+	CharacterCollider->SetCapsuleHalfHeight(spriteRes/2.0);
+	SetActorScale3D(FVector(actorScale));
 	
 	//Make character face camera at all times
 	FRotator SpringArmRotation = SpringArm->GetComponentRotation();
 	SpringArmRotation.Roll = -SpringArmRotation.Pitch;
 	SpringArmRotation.Yaw = 0.0f;
 	SpringArmRotation.Pitch = 0.0f;
+	CharacterCollider->SetCapsuleHalfHeight((spriteRes/2.0 - spriteBottomMargin) - cos(-SpringArmRotation.Pitch));
 	CharacterFlipbook->SetWorldRotation(SpringArmRotation);
+	//info about the animation so i can sync the strides with the movement speed (avoids feet sliding)
+	float stridePixels = 75;
+	float strideFrames = 10;
+	CharacterFlipbook->SetPlayRate(moveSpeed/(15*actorScale*stridePixels/strideFrames));
 }
 
 void AGame_PaperCharacter::Tick(float DeltaTime)
@@ -163,7 +174,7 @@ void AGame_PaperCharacter::Move_XAxis(float AxisValue)
 	if (AxisValue == -1) PlayerDirection = Direction::MovingLeft;
 	
 	// Move at 100 units per second forward or backward
-	CurrentVelocity.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
+	CurrentVelocity.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * moveSpeed;
 	this->AddMovementInput(this->GetActorForwardVector() * CurrentVelocity.X);
 }
 
@@ -173,14 +184,13 @@ void AGame_PaperCharacter::Move_YAxis(float AxisValue)
 	if (AxisValue == -1) PlayerDirection = Direction::MovingDown;
 	
 	// Move at 100 units per second right or left
-	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
+	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * moveSpeed;
 	this->AddMovementInput(this->GetActorRightVector() * CurrentVelocity.Y);
 }
 
 /** When player in item_base zone, place item in held_item */
 void AGame_PaperCharacter::Pickup()
 {
-	UE_LOG(LogTemp, Warning, TEXT("broadcasting"));
 	PickupItemEvent.Broadcast();
 	if (Current_HeldItem == nullptr)
 	{
