@@ -22,7 +22,7 @@ ANPCBase::ANPCBase()
 	
 	coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("spotlightComp"));
 	coneLight->SetupAttachment(CharacterCollider);
-	coneRadius = 1000.0;
+	coneRadius = 2000.0;
 	coneAngle = 45.0;
 	moveSpeed = 400;
 	direction=FVector(1,0,0);
@@ -32,7 +32,7 @@ ANPCBase::ANPCBase()
 	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
-	CharacterFlipbook->BoundsScale = 10.0f;
+	//CharacterFlipbook->BoundsScale = 10.0f;
 }
 
 bool ANPCBase::detectsPlayer()
@@ -72,16 +72,30 @@ void ANPCBase::BeginPlay()
 {
 	Super::BeginPlay();
 	//setting all the animations for this npc
-	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkLeft_Anim.WalkLeft_Anim"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkRight_Anim.WalkRight_Anim"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkUp_Anim.WalkUp_Anim"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkDown_Anim.WalkDown_Anim"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeWalkLeft.EmployeeWalkLeft"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeWalkRight.EmployeeWalkRight"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeWalkUp.EmployeeWalkUp"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeWalkDown.EmployeeWalkDown"), NULL, LOAD_None, NULL));
 
-	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/LeftIdle_Anim.LeftIdle_Anim"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/RightIdle_Anim.RightIdle_Anim"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/UpIdle_Anim.UpIdle_Anim"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/Idle_Anim.Idle_Anim"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeIdleLeft.EmployeeIdleLeft"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeIdleRight.EmployeeIdleRight"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeIdleUp.EmployeeIdleUp"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeIdleDown.EmployeeIdleDown"), NULL, LOAD_None, NULL));
+
+	float actorScale = 4;
+	//this sprite is 96x96
+	float spriteRes = 96;
+	//the player animation frames are actually like 19 pixels above the bottom of the sprite, so this shifts it down
+	//to touch the floor
+	float spriteBottomMargin = 17;
 	
+	//fix collider
+	CharacterCollider->SetCapsuleHalfHeight(spriteRes/2.0-spriteBottomMargin);
+	SetActorScale3D(FVector(actorScale));
+	
+	const float stridePixels = 70;
+	const float strideFrames = 16;
+	CharacterFlipbook->SetPlayRate(moveSpeed/(15*actorScale*stridePixels/strideFrames));
 	//finding player pawn and binding pickup delegate
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
 	player->PickupItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerPickup,TEXT("playerPickup"));

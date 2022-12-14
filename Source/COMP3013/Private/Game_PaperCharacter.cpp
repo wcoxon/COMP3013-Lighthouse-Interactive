@@ -54,7 +54,7 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	CharacterCollider->SetCapsuleRadius(25.0f);
 
 	//Movement System Settings
-	moveSpeed=500;
+	moveSpeed=800;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 8000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 50.0f;
@@ -76,17 +76,17 @@ void AGame_PaperCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	//Grab character animations
-	IdleDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet97.RunSpriteSheet97"), NULL, LOAD_None, NULL);
-	IdleUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/UpIdle_Anim.UpIdle_Anim"), NULL, LOAD_None, NULL);
-	IdleLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/LeftIdle_Anim.LeftIdle_Anim"), NULL, LOAD_None, NULL);
-	IdleRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/RightIdle_Anim.RightIdle_Anim"), NULL, LOAD_None, NULL);
-	
-	MovingDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet97.RunSpriteSheet97"), NULL, LOAD_None, NULL);
-	MovingUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet99.RunSpriteSheet99"), NULL, LOAD_None, NULL);
-	MovingLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet98.RunSpriteSheet98"), NULL, LOAD_None, NULL);
-	MovingRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunSpriteSheet100.RunSpriteSheet100"), NULL, LOAD_None, NULL);
-	
-	CharacterFlipbook->SetFlipbook(IdleDownAnim);
+	animations.Add(FString("runLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerRunLeft.PlayerRunLeft"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerRunRight.PlayerRunRight"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerRunUp.PlayerRunUp"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerRunDown.PlayerRunDown"), NULL, LOAD_None, NULL));
+
+	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerIdleLeft.PlayerIdleLeft"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerIdleRight.PlayerIdleRight"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerIdleUp.PlayerIdleUp"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerIdleDown.PlayerIdleDown"), NULL, LOAD_None, NULL));
+
+	CharacterFlipbook->SetFlipbook(animations["idleDown"]);
 	CharacterFlipbook->CastShadow = true;
 
 	//rescale the actor by 3.5
@@ -123,33 +123,33 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 		if (CurrentVelocity.X == 0 && CurrentVelocity.Y == 0)
 		{
 			PlayerDirection = Direction::Up;
-			CharacterFlipbook->SetFlipbook(IdleUpAnim);
+			CharacterFlipbook->SetFlipbook(animations["idleUp"]);
 		}
-		else CharacterFlipbook->SetFlipbook(MovingUpAnim);
+		else CharacterFlipbook->SetFlipbook(animations["runUp"]);
 		break;
 	case Direction::MovingLeft:
 		if (CurrentVelocity.X == 0 && CurrentVelocity.Y == 0)
 		{
 			PlayerDirection = Direction::Left;
-			CharacterFlipbook->SetFlipbook(IdleLeftAnim);
+			CharacterFlipbook->SetFlipbook(animations["idleLeft"]);
 		}
-		else CharacterFlipbook->SetFlipbook(MovingLeftAnim);
+		else CharacterFlipbook->SetFlipbook(animations["runLeft"]);
 		break;
 	case Direction::MovingRight:
 		if (CurrentVelocity.X == 0 && CurrentVelocity.Y == 0)
 		{
 			PlayerDirection = Direction::Right;
-			CharacterFlipbook->SetFlipbook(IdleRightAnim);
+			CharacterFlipbook->SetFlipbook(animations["idleRight"]);
 		}
-		else CharacterFlipbook->SetFlipbook(MovingRightAnim);
+		else CharacterFlipbook->SetFlipbook(animations["runRight"]);
 		break;
 	case Direction::MovingDown:
 		if (CurrentVelocity.X == 0 && CurrentVelocity.Y == 0)
 		{
 			PlayerDirection = Direction::Down;
-			CharacterFlipbook->SetFlipbook(IdleDownAnim);
+			CharacterFlipbook->SetFlipbook(animations["idleDown"]);
 		}
-		else CharacterFlipbook->SetFlipbook(MovingDownAnim);
+		else CharacterFlipbook->SetFlipbook(animations["runDown"]);
 		break;
 	}
 }

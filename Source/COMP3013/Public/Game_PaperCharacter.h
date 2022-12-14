@@ -61,29 +61,6 @@ public:
 	UStaticMeshComponent* Mesh_HeldItem;
 	
 	//Animations
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* IdleDownAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* IdleUpAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* IdleLeftAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* IdleRightAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* MovingDownAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* MovingUpAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* MovingLeftAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* MovingRightAnim;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
