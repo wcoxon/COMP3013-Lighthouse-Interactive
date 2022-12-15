@@ -36,15 +36,13 @@ public:
 	void turnTowards(FVector destination,float deltaSec);
 	UFUNCTION()
 	void playerPickup();
-	//AIState currentState;
 	UPROPERTY(EditAnywhere)
-	FVector2D coneDirection;
+	FVector coneDirection;
 protected:
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 private:
-	float moveSpeed;
 	float turnSpeed;
 	float coneRadius;
 	float coneAngle;
@@ -59,11 +57,4 @@ private:
 	AGame_PaperCharacter* player;
 	UPROPERTY()
 	UNavigationPath *tpath;
-	
-	
-	UPaperFlipbookComponent* CharacterFlipbook = GetSprite();
-	UCapsuleComponent* CharacterCollider = GetCapsuleComponent();
-	
-	
-	
 };

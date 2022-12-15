@@ -71,7 +71,7 @@ public:
 	void Pickup();
 	void OpenInventory();
 	void Conceal();
-	FVector CurrentVelocity;
+	FVector inputVector;
 	bool PlayerStateChange = false;
 
 	//Direct asset reference -> Inventory HUD widget
@@ -101,10 +101,5 @@ protected:
 	virtual void BeginPlay() override;
 	
 private:
-
-	//Grab default components of class
-	UPaperFlipbookComponent* CharacterFlipbook = GetSprite();
-	UCapsuleComponent* CharacterCollider = GetCapsuleComponent();
-	UCharacterMovementComponent* CharacterMovementComp = GetCharacterMovement();
 	
 };

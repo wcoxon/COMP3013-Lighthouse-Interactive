@@ -15,26 +15,30 @@
 #include "Math/Vector.h"
 #include "Algo/Reverse.h"
 #include "Engine/World.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 ANPCBase::ANPCBase()
 {
 	
 	coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("spotlightComp"));
+	coneLight->SetupAttachment(CharacterCollider);
 	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
 	
-	coneLight->SetupAttachment(CharacterCollider);
 	coneRadius = 2000.0;
-	coneAngle = 45.0;
-	moveSpeed = 400;
+	coneAngle = FMath::DegreesToRadians(45.0);
 	direction=FVector(1,0,0);
-	coneDirection=FVector2d(1,0);
+	coneDirection=FVector(1,0,0);
 	turnSpeed = 180;
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
-	//CharacterFlipbook->BoundsScale = 10.0f;
+	moveSpeed = 500;
+	CharacterMovementComp->MovementMode=MOVE_NavWalking;
+	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
+	CharacterMovementComp->MaxAcceleration = 500.0f;
+	CharacterMovementComp->BrakingDecelerationWalking = moveSpeed/0.1f;
 }
 
 bool ANPCBase::detectsPlayer()
@@ -43,9 +47,9 @@ bool ANPCBase::detectsPlayer()
 	{
 		return false;
 	}
-	const float test = FMath::RadiansToDegrees(abs(std::atan2(player->GetActorLocation().Y-GetActorLocation().Y,player->GetActorLocation().X-GetActorLocation().X)-std::atan2(coneDirection.Y,coneDirection.X)));
 	
-	if(test>coneAngle && test< 360-coneAngle)
+	const FVector playerDisplacement = player->GetActorLocation()-GetActorLocation();
+	if(abs(FMath::FindDeltaAngleRadians(playerDisplacement.HeadingAngle(),coneDirection.HeadingAngle()))>coneAngle)
 	{
 		return false;
 	}
@@ -98,8 +102,7 @@ void ANPCBase::BeginPlay()
 	const float stridePixels = 70;
 	const float strideFrames = 16;
 	CharacterFlipbook->SetPlayRate(moveSpeed/(15*actorScale*stridePixels/strideFrames));
-
-
+	
 	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
 	
 	
@@ -112,7 +115,7 @@ void ANPCBase::BeginPlay()
 	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),GetNavAgentLocation());
 
 	//setting the spotlight to be a better vision cone
-	coneLight->SetInnerConeAngle(coneAngle);
+	coneLight->SetInnerConeAngle(FMath::RadiansToDegrees(coneAngle));
 	coneLight->bUseInverseSquaredFalloff = 0;
 	coneLight->SetLightFalloffExponent(0.25);
 	coneLight->SetIntensity(5);
@@ -141,35 +144,43 @@ void ANPCBase::turnTowards(FVector destination, float deltaSec)
 	
 	if(abs(FMath::FindDeltaAngleRadians(targetAngle,directionAngle))<deltaAngle)
 	{
-		coneDirection = FVector2d(displacement.GetSafeNormal2D());
+		coneDirection = displacement.GetSafeNormal2D();
 	}
 	else if(FMath::FindDeltaAngleRadians(targetAngle,directionAngle)<0)
 	{
-		coneDirection=FVector2d(cos(directionAngle+deltaAngle),sin(directionAngle+deltaAngle));
+		coneDirection=FVector(cos(directionAngle+deltaAngle),sin(directionAngle+deltaAngle),0);
 	}
 	else
 	{
-		coneDirection=FVector2d(cos(directionAngle-deltaAngle),sin(directionAngle-deltaAngle));
+		coneDirection=FVector(cos(directionAngle-deltaAngle),sin(directionAngle-deltaAngle),0);
 	}
 	coneLight->SetRelativeRotation(FRotator(0,FMath::RadiansToDegrees(std::atan2(coneDirection.Y,coneDirection.X)),0));
 }
 
 void ANPCBase::moveTowards(FVector destination,float deltaSec)
 {
-	float distance = deltaSec*moveSpeed;
+	float distance = deltaSec*CharacterMovementComp->Velocity.Length();
 	const FVector3d displacement = destination - GetNavAgentLocation();
 	if(displacement.Length()<distance)
 	{
 		SetActorLocation(GetActorLocation()+ FVector3d(1,1,0)*displacement);
 		return;
 	}
+	/*float initVelocity = CharacterMovementComp->Velocity.Length();
+	float timeToDecel = initVelocity/CharacterMovementComp->BrakingDecelerationWalking;
+	float distToStop = 2*CharacterMovementComp->Velocity.Length()*timeToDecel;
+	if(displacement.Length()<distToStop)
+	{
+		return;
+	}*/
 	
-	if(!coneDirection.Equals(FVector2d(displacement.GetSafeNormal2D())))
+	if(!coneDirection.Equals(displacement.GetSafeNormal2D()))
 	{
 		direction = displacement.GetSafeNormal2D();
 		turnTowards(destination,deltaSec);
 	}
 
+	//set sprite to walking in current direction
 	if(abs(direction.Y)>abs(direction.X))
 	{
 		if(direction.Y>0) CharacterFlipbook->SetFlipbook(animations["walkUp"]);
@@ -180,13 +191,15 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 		if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["walkRight"]);
 		else CharacterFlipbook->SetFlipbook(animations["walkLeft"]);
 	}
+	//footstep sound effects at frame 13 and 30
 	if(CharacterFlipbook->GetPlaybackPositionInFrames()==13 || CharacterFlipbook->GetPlaybackPositionInFrames()==30)
 	{
 		audioSource->Stop();
 		audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
 		audioSource->Play();
 	}
-	SetActorLocation(GetActorLocation()+ FVector3d(1,1,0)*(direction*distance));
+	CharacterFlipbook->SetPlayRate(CharacterMovementComp->Velocity.Length()/(15*4*70/16));
+	CharacterMovementComp->RequestPathMove(direction);
 }
 
 void ANPCBase::Tick(float DeltaSeconds)
@@ -277,7 +290,6 @@ void ANPCBase::Tick(float DeltaSeconds)
 		if(currentState==searching) coneLight->SetLightColor(FLinearColor(1,0.0,1.0));
 		else coneLight->SetLightColor(FLinearColor(1,1,1));
 	}
-	
 	if(tpath->PathPoints.Num()>1)
 	{
 		moveTowards(tpath->PathPoints[1],DeltaSeconds);
