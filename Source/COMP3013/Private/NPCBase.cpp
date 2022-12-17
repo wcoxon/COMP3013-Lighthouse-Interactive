@@ -20,20 +20,23 @@
 
 ANPCBase::ANPCBase()
 {
-	
+	//initialising components
 	coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("spotlightComp"));
 	coneLight->SetupAttachment(CharacterCollider);
 	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
-	
+
+	//assigning fields
 	coneRadius = 2000.0;
 	coneAngle = FMath::DegreesToRadians(45.0);
 	direction=FVector(1,0,0);
 	coneDirection=FVector(1,0,0);
-	turnSpeed = 180;
+	turnSpeed = FMath::DegreesToRadians(180);
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
+	
+	//setting up movement properties
 	moveSpeed = 500;
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
@@ -43,17 +46,20 @@ ANPCBase::ANPCBase()
 
 bool ANPCBase::detectsPlayer()
 {
+	//check if player is within vision distance
 	if(FVector::Distance(player->GetActorLocation(),GetActorLocation())>coneRadius)
 	{
 		return false;
 	}
-	
+
+	//check if player is within vision cone
 	const FVector playerDisplacement = player->GetActorLocation()-GetActorLocation();
 	if(abs(FMath::FindDeltaAngleRadians(playerDisplacement.HeadingAngle(),coneDirection.HeadingAngle()))>coneAngle)
 	{
 		return false;
 	}
-	
+
+	//check for obstacles using raycast
 	FHitResult hit;
 	const bool actorHit = GetWorld()->LineTraceSingleByChannel(hit,GetActorLocation(),player->GetActorLocation(),ECC_Visibility,FCollisionQueryParams(),FCollisionResponseParams());
 	if(actorHit && hit.GetActor())
@@ -68,8 +74,6 @@ void ANPCBase::playerPickup()
 {
 	if(detectsPlayer())
 	{
-		//if the player is seen picking up an item it will alert the npc
-		//yeah ik concealing items should be what aggros
 		currentState = alerted;
 	}
 }
@@ -78,33 +82,38 @@ void ANPCBase::BeginPlay()
 {
 	Super::BeginPlay();
 	//setting all the animations for this npc
-	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeWalkLeft.EmployeeWalkLeft"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeWalkRight.EmployeeWalkRight"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeWalkUp.EmployeeWalkUp"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeWalkDown.EmployeeWalkDown"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkLeft64.EmployeeWalkLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkRight64.EmployeeWalkRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkUp64.EmployeeWalkUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkDown64.EmployeeWalkDown64"), NULL, LOAD_None, NULL));
 
-	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeIdleLeft.EmployeeIdleLeft"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeIdleRight.EmployeeIdleRight"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeIdleUp.EmployeeIdleUp"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/EmployeeIdleDown.EmployeeIdleDown"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleLeft64.EmployeeIdleLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleRight64.EmployeeIdleRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleUp64.EmployeeIdleUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleDown64.EmployeeIdleDown64"), NULL, LOAD_None, NULL));
 
-	float actorScale = 4;
-	//this sprite is 96x96
-	float spriteRes = 96;
-	//the player animation frames are actually like 19 pixels above the bottom of the sprite, so this shifts it down
-	//to touch the floor
-	float spriteBottomMargin = 16;
+	CharacterFlipbook->SetFlipbook(animations["idleRight"]);
 	
-	//fix collider
-	CharacterCollider->SetCapsuleHalfHeight(spriteRes/2.0-spriteBottomMargin);
-	SetActorScale3D(FVector(actorScale));
+	//base height of the sprite i.e. how many pixels tall it is since pixels per unit is 1
+	float spriteHeight = 64.0;
+	//offset from the bottom of the sprite to the feet of the character
+	float spriteGroundLevel = 5.0;
+	//scale to resize the actor
+	float actorScale = 300.0;
+	//the angle that we set the sprite to
+	float spriteRoll = FMath::DegreesToRadians(CharacterFlipbook->GetComponentRotation().Roll);
+
+	//apply rotation and foot offset to half height of sprite
+	float halfHeight = cos(spriteRoll)*(spriteHeight/2-spriteGroundLevel);
+
+	//set collider height to offset the sprite so it touches the ground
+	CharacterCollider->SetCapsuleHalfHeight(halfHeight);
 	
-	const float stridePixels = 70;
-	const float strideFrames = 16;
-	CharacterFlipbook->SetPlayRate(moveSpeed/(15*actorScale*stridePixels/strideFrames));
-	
+	//scales up the actor
+	SetActorScale3D(FVector(actorScale/spriteHeight));
+
+	//load up footstep audio
 	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
-	
 	
 	//finding player pawn and binding pickup delegate
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
@@ -114,83 +123,88 @@ void ANPCBase::BeginPlay()
 	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
 	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),GetNavAgentLocation());
 
-	//setting the spotlight to be a better vision cone
+	//setting the spotlight to be a vision cone
 	coneLight->SetInnerConeAngle(FMath::RadiansToDegrees(coneAngle));
 	coneLight->bUseInverseSquaredFalloff = 0;
 	coneLight->SetLightFalloffExponent(0.25);
 	coneLight->SetIntensity(5);
 	coneLight->SetAttenuationRadius(coneRadius);
 
-	//initialising random patrol pattern
+	//initialising random patrol pattern containing 3 points
 	int patrolCount = 3;
 	for(int x=0;x<patrolCount;x++)
 	{
 		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),1000));
 	}
-	//setting npc sprite
-	CharacterFlipbook->SetFlipbook(animations["idleRight"]);
-	//initial state is patrolling
+	
+	//set initial AI state to patrolling
 	currentState=patrol;
+	
+	//counter used to handle pauses in the NPC's behaviour
 	waitCounter=0;
 	
 }
 
 void ANPCBase::turnTowards(FVector destination, float deltaSec)
 {
+	//get a vector between the actor and the target
 	const FVector3d displacement = destination - GetNavAgentLocation();
-	float deltaAngle = FMath::DegreesToRadians(turnSpeed*deltaSec);
-	float directionAngle = std::atan2(coneDirection.Y,coneDirection.X);
-	float targetAngle = std::atan2(displacement.Y,displacement.X);
 	
-	if(abs(FMath::FindDeltaAngleRadians(targetAngle,directionAngle))<deltaAngle)
+	//angle between the current vision direction and the target direction
+	float deltaAngle = FMath::FindDeltaAngleRadians(coneDirection.HeadingAngle(),displacement.HeadingAngle());
+	
+	//the angle to rotate towards the target in this frame
+	float deltaTurn = turnSpeed*deltaSec*FMath::Sign(deltaAngle);
+
+	//if the target angle will be reached within this frame, snap the direction to the target direction
+	if(abs(deltaAngle)<abs(deltaTurn))
 	{
 		coneDirection = displacement.GetSafeNormal2D();
 	}
-	else if(FMath::FindDeltaAngleRadians(targetAngle,directionAngle)<0)
-	{
-		coneDirection=FVector(cos(directionAngle+deltaAngle),sin(directionAngle+deltaAngle),0);
-	}
+	
+	//else rotate the vision cone towards the target using deltaTurn
 	else
 	{
-		coneDirection=FVector(cos(directionAngle-deltaAngle),sin(directionAngle-deltaAngle),0);
+		coneDirection=coneDirection.RotateAngleAxis(FMath::RadiansToDegrees(deltaTurn),FVector::ZAxisVector);
 	}
-	coneLight->SetRelativeRotation(FRotator(0,FMath::RadiansToDegrees(std::atan2(coneDirection.Y,coneDirection.X)),0));
+	
+	//update the spotlight to reflect this change in the vision cone
+	coneLight->SetRelativeRotation(FRotator(0,FMath::RadiansToDegrees(coneDirection.HeadingAngle()),0));
 }
 
 void ANPCBase::moveTowards(FVector destination,float deltaSec)
 {
-	float distance = deltaSec*CharacterMovementComp->Velocity.Length();
+	const float deltaDistance = deltaSec*CharacterMovementComp->Velocity.Length();
 	const FVector3d displacement = destination - GetNavAgentLocation();
-	if(displacement.Length()<distance)
+	
+	//if the target position will be reached in this frame, snap position to target
+	if(displacement.Length()<deltaDistance)
 	{
 		SetActorLocation(GetActorLocation()+ FVector3d(1,1,0)*displacement);
 		return;
 	}
-	/*float initVelocity = CharacterMovementComp->Velocity.Length();
-	float timeToDecel = initVelocity/CharacterMovementComp->BrakingDecelerationWalking;
-	float distToStop = 2*CharacterMovementComp->Velocity.Length()*timeToDecel;
-	if(displacement.Length()<distToStop)
+	//given the current speed and deceleration, the distance travelled if stopped
+	const float brakingDistance = 2*CharacterMovementComp->Velocity.SquaredLength()/CharacterMovementComp->BrakingDecelerationWalking;
+	
+	//if within braking distance of the target, brake
+	if(displacement.Length()<=brakingDistance)
 	{
 		return;
-	}*/
-	
+	}
+
+	//if not looking at the target, turn to look at the target
 	if(!coneDirection.Equals(displacement.GetSafeNormal2D()))
 	{
 		direction = displacement.GetSafeNormal2D();
 		turnTowards(destination,deltaSec);
 	}
 
-	//set sprite to walking in current direction
-	if(abs(direction.Y)>abs(direction.X))
-	{
-		if(direction.Y>0) CharacterFlipbook->SetFlipbook(animations["walkUp"]);
-		else CharacterFlipbook->SetFlipbook(animations["walkDown"]);
-	}
-	else if(abs(direction.Y)<abs(direction.X))
-	{
-		if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["walkRight"]);
-		else CharacterFlipbook->SetFlipbook(animations["walkLeft"]);
-	}
+	//set sprite animation to walking in current direction
+	setDirectionalAnimation(direction,"walk");
+	
+	//alter the animation speed to reflect the velocity of the player
+	setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),300);
+	
 	//footstep sound effects at frame 13 and 30
 	if(CharacterFlipbook->GetPlaybackPositionInFrames()==13 || CharacterFlipbook->GetPlaybackPositionInFrames()==30)
 	{
@@ -198,14 +212,15 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 		audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
 		audioSource->Play();
 	}
-	CharacterFlipbook->SetPlayRate(CharacterMovementComp->Velocity.Length()/(15*4*70/16));
+	
+	//move actor in direction
 	CharacterMovementComp->RequestPathMove(direction);
 }
 
 void ANPCBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
+	
 	switch(currentState)
 	{
 	case patrol:
@@ -296,19 +311,9 @@ void ANPCBase::Tick(float DeltaSeconds)
 		if(FVector2d::Distance(FVector2d(GetNavAgentLocation()),FVector2d(tpath->PathPoints[1]))<1)
 		{
 			tpath->PathPoints.RemoveAt(0);
-			
-			if(abs(direction.Y)>abs(direction.X))
-			{
-				if(direction.Y>0) CharacterFlipbook->SetFlipbook(animations["idleUp"]);
-				else CharacterFlipbook->SetFlipbook(animations["idleDown"]);
-			}
-			else if(abs(direction.Y)<abs(direction.X))
-			{
-				if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["idleRight"]);
-				else CharacterFlipbook->SetFlipbook(animations["idleLeft"]);
-			}
+			setDirectionalAnimation(direction,"idle");
+			CharacterFlipbook->SetPlayRate(1);
 		}
-		
 	}
 }
 

@@ -10,6 +10,12 @@
 /**
  * 
  */
+/*enum Action
+{
+	Idle,
+	Walk,
+	Run
+};*/
 UCLASS()
 class COMP3013_API AAgent_PaperCharacter : public APaperCharacter
 {
@@ -24,7 +30,8 @@ public:
 	UPROPERTY()
 	float moveSpeed;
 	virtual void moveTowards(FVector destination,float distance);
-	
+	void setAnimationRateToSpeed(UPaperFlipbookComponent* flipbook, float speed,float animationDistance);
+	void setDirectionalAnimation(FVector animDirection,FString actionString);
 	UPROPERTY(VisibleAnywhere)
 	UAudioComponent* audioSource;
 protected:

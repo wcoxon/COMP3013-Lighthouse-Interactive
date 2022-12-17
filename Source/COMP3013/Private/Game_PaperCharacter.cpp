@@ -46,28 +46,27 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	Mesh_HeldItem->SetRelativeLocationAndRotation(FVector(0, 0, 15), FRotator(0, 0, 90));
 	Mesh_HeldItem->SetRelativeScale3D(FVector(0.15f,0.15f,0.15f));
 	Mesh_HeldItem->CastShadow = false;
-
+	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
 	CharacterCollider->SetRenderCustomDepth(true);
 	
 	//Collider Settings
-	CharacterCollider->SetCapsuleRadius(25.0f);
-
+	CharacterCollider->SetCapsuleRadius(6.6f);
+	
 	//Movement System Settings
 	moveSpeed=800;
 	CharacterMovementComp->MovementMode=MOVE_Walking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
-	CharacterMovementComp->MaxAcceleration = 1600.0f;
+	CharacterMovementComp->MaxAcceleration = 1200.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 0.1f;
-
+	
 	//Assign HUD element
 	static ConstructorHelpers::FClassFinder<UUserWidget> hudWidgetObj (TEXT ("/Game/UserInterface/WIDGET_Inventory"));
 	if (hudWidgetObj.Succeeded ()) HUDWidgetClass = hudWidgetObj.Class;
 	else HUDWidgetClass = nullptr;
-
-	direction = FVector(1,0,0);
 	
+	direction = FVector::UpVector;
 }
 
 void AGame_PaperCharacter::Destroy(UItem* Item)
@@ -78,85 +77,79 @@ void AGame_PaperCharacter::Destroy(UItem* Item)
 void AGame_PaperCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 	//Grab character animations
-	animations.Add(FString("runLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerRunLeft.PlayerRunLeft"), NULL, LOAD_None, NULL));
-	animations.Add(FString("runRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerRunRight.PlayerRunRight"), NULL, LOAD_None, NULL));
-	animations.Add(FString("runUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerRunUp.PlayerRunUp"), NULL, LOAD_None, NULL));
-	animations.Add(FString("runDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerRunDown.PlayerRunDown"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunLeft64.PlayerRunLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunRight64.PlayerRunRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunUp64.PlayerRunUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunDown64.PlayerRunDown64"), NULL, LOAD_None, NULL));
 
-	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerIdleLeft.PlayerIdleLeft"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerIdleRight.PlayerIdleRight"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerIdleUp.PlayerIdleUp"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/PlayerIdleDown.PlayerIdleDown"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/WalkAnimation/PlayerWalkLeft64.PlayerWalkLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/WalkAnimation/PlayerWalkRight64.PlayerWalkRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/WalkAnimation/PlayerWalkUp64.PlayerWalkUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/WalkAnimation/PlayerWalkDown64.PlayerWalkDown64"), NULL, LOAD_None, NULL));
+	
+	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleLeft64.PlayerIdleLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleRight64.PlayerIdleRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleUp64.PlayerIdleUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleDown64.PlayerIdleDown64"), NULL, LOAD_None, NULL));
 
-	CharacterFlipbook->SetFlipbook(animations["idleDown"]);
-	CharacterFlipbook->CastShadow = true;
-
-	//rescale the actor by 3.5
-	float actorScale = 3.5;
-	//this sprite is 96x96
-	float spriteRes = 96;
-	//the player animation frames are actually like 19 pixels above the bottom of the sprite, so this shifts it down
-	//to touch the floor
-	float spriteBottomMargin = 19;
-	//fix collider
-	SetActorScale3D(FVector(actorScale));
+	CharacterFlipbook->SetFlipbook(animations["idleUp"]);
+	
+	float spriteRes = 64.0;
+	float spriteGroundLevel = 5.0;
+	
+	float actorScale = 300.0;
+	
+	float spriteRoll = FMath::DegreesToRadians(CharacterFlipbook->GetComponentRotation().Roll);
+	
+	float halfHeight = cos(spriteRoll)*(spriteRes/2-spriteGroundLevel);
+	
+	CharacterCollider->SetCapsuleHalfHeight(halfHeight);
+	
+	SetActorScale3D(FVector(actorScale/spriteRes));
 
 	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
-	
-	//Make character face camera at all times
-	FRotator SpringArmRotation = SpringArm->GetComponentRotation();
-	SpringArmRotation.Roll = -SpringArmRotation.Pitch;
-	SpringArmRotation.Yaw = 0.0f;
-	SpringArmRotation.Pitch = 0.0f;
-	CharacterCollider->SetCapsuleHalfHeight((spriteRes/2.0 - spriteBottomMargin) - cos(-SpringArmRotation.Pitch));
-	CharacterFlipbook->SetWorldRotation(SpringArmRotation);
-	//info about the animation so i can sync the strides with the movement speed (avoids feet sliding)
-	float stridePixels = 75;
-	float strideFrames = 10;
-	CharacterFlipbook->SetPlayRate(moveSpeed/(15*actorScale*stridePixels/strideFrames));
 }
 
 void AGame_PaperCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(inputVector.Length()>0 )
+	if(inputVector.Length()>0)
 	{
 		this->AddMovementInput(inputVector.GetSafeNormal2D());
 		direction=CharacterMovementComp->Velocity.GetSafeNormal2D();
-		CharacterFlipbook->SetPlayRate(CharacterMovementComp->Velocity.Length()/(15*3.5*75/10));
+	}
+	float animationProgress;
+	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.9)
+	{
+		animationProgress = CharacterFlipbook->GetPlaybackPosition();
+		setDirectionalAnimation(direction,"run");
+		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
+		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),500);
 		if(CharacterFlipbook->GetPlaybackPositionInFrames()==10 || CharacterFlipbook->GetPlaybackPositionInFrames()==22)
 		{
 			audioSource->Stop();
 			audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
 			audioSource->Play();
 		}
-		float animationProgress = CharacterFlipbook->GetPlaybackPosition();
-		if(abs(direction.Y)>abs(direction.X))
-		{
-			if(direction.Y>0) CharacterFlipbook->SetFlipbook(animations["runUp"]);
-			else CharacterFlipbook->SetFlipbook(animations["runDown"]);
-		}
-		else if(abs(direction.Y)<abs(direction.X))
-		{
-			if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["runRight"]);
-			else CharacterFlipbook->SetFlipbook(animations["runLeft"]);
-		}
+	}
+	else if(CharacterMovementComp->Velocity.Length()>0)
+	{
+		animationProgress = CharacterFlipbook->GetPlaybackPosition();
+		setDirectionalAnimation(direction,"walk");
+		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),300);
 		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
+		if(CharacterFlipbook->GetPlaybackPositionInFrames()==11 || CharacterFlipbook->GetPlaybackPositionInFrames()==26)
+		{
+			audioSource->Stop();
+			audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
+			audioSource->Play();
+		}
 	}
 	else
 	{
-		if(abs(direction.Y)>abs(direction.X))
-		{
-			if(direction.Y>0) CharacterFlipbook->SetFlipbook(animations["idleUp"]);
-			else CharacterFlipbook->SetFlipbook(animations["idleDown"]);
-		}
-		else if(abs(direction.Y)<abs(direction.X))
-		{
-			if(direction.X>0) CharacterFlipbook->SetFlipbook(animations["idleRight"]);
-			else CharacterFlipbook->SetFlipbook(animations["idleLeft"]);
-		}
+		setDirectionalAnimation(direction,"idle");
+		CharacterFlipbook->SetPlayRate(1);
 	}
 }
 
