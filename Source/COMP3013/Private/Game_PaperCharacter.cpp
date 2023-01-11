@@ -15,6 +15,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "PlayerInvComponent.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Called when the game starts or when spawned
@@ -27,6 +28,7 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	Inventory = CreateDefaultSubobject<UPlayerInvComponent>(TEXT("Inventory"));
 	Mesh_HeldItem = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldItem"));
+	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
 
 	//Attach Components
 	SpringArm->SetupAttachment(CharacterCollider);
@@ -44,29 +46,27 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	Mesh_HeldItem->SetRelativeLocationAndRotation(FVector(0, 0, 15), FRotator(0, 0, 90));
 	Mesh_HeldItem->SetRelativeScale3D(FVector(0.15f,0.15f,0.15f));
 	Mesh_HeldItem->CastShadow = false;
-
+	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
 	CharacterCollider->SetRenderCustomDepth(true);
-	CharacterFlipbook->BoundsScale = 10.0f;
 	
 	//Collider Settings
 	CharacterCollider->SetCapsuleRadius(6.6f);
-
+	
 	//Movement System Settings
-	//CharacterMovementComp->DefaultLandMovementMode = MOVE_Flying;
-	CharacterMovementComp->MaxFlySpeed = 300.0f;
-	CharacterMovementComp->BrakingDecelerationFlying = 4000.0f;
-	CharacterMovementComp->bRequestedMoveUseAcceleration = false;
-	CharacterMovementComp->MaxAcceleration = 8000.0f;
-	CharacterMovementComp->BrakingFrictionFactor = 50.0f;
-
+	moveSpeed=800;
+	CharacterMovementComp->MovementMode=MOVE_Walking;
+	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
+	CharacterMovementComp->MaxAcceleration = 1200.0f;
+	CharacterMovementComp->BrakingFrictionFactor = 0.1f;
+	
 	//Assign HUD element
 	static ConstructorHelpers::FClassFinder<UUserWidget> hudWidgetObj (TEXT ("/Game/UserInterface/WIDGET_Inventory"));
 	if (hudWidgetObj.Succeeded ()) HUDWidgetClass = hudWidgetObj.Class;
 	else HUDWidgetClass = nullptr;
 	
-	
+	direction = FVector::UpVector;
 }
 
 void AGame_PaperCharacter::Destroy(UItem* Item)
@@ -77,69 +77,79 @@ void AGame_PaperCharacter::Destroy(UItem* Item)
 void AGame_PaperCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 	//Grab character animations
-	IdleDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/Idle_Anim.Idle_Anim"), NULL, LOAD_None, NULL);
-	IdleUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/UpIdle_Anim.UpIdle_Anim"), NULL, LOAD_None, NULL);
-	IdleLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/LeftIdle_Anim.LeftIdle_Anim"), NULL, LOAD_None, NULL);
-	IdleRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/RightIdle_Anim.RightIdle_Anim"), NULL, LOAD_None, NULL);
-	MovingDownAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkDown_Anim.WalkDown_Anim"), NULL, LOAD_None, NULL);
-	MovingUpAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkUp_Anim.WalkUp_Anim"), NULL, LOAD_None, NULL);
-	MovingLeftAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkLeft_Anim.WalkLeft_Anim"), NULL, LOAD_None, NULL);
-	MovingRightAnim = LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/ThirdParty/PrototypeAssets/WalkRight_Anim.WalkRight_Anim"), NULL, LOAD_None, NULL);
-	CharacterFlipbook->SetFlipbook(IdleDownAnim);
-	CharacterFlipbook->CastShadow = true;
+	animations.Add(FString("runLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunLeft64.PlayerRunLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunRight64.PlayerRunRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunUp64.PlayerRunUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("runDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunDown64.PlayerRunDown64"), NULL, LOAD_None, NULL));
+
+	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/WalkAnimation/PlayerWalkLeft64.PlayerWalkLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/WalkAnimation/PlayerWalkRight64.PlayerWalkRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/WalkAnimation/PlayerWalkUp64.PlayerWalkUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/WalkAnimation/PlayerWalkDown64.PlayerWalkDown64"), NULL, LOAD_None, NULL));
 	
-	//fix collider
-	CharacterCollider->SetCapsuleHalfHeight(6.6f);
-	SetActorScale3D(FVector(10));
+	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleLeft64.PlayerIdleLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleRight64.PlayerIdleRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleUp64.PlayerIdleUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleDown64.PlayerIdleDown64"), NULL, LOAD_None, NULL));
+
+	CharacterFlipbook->SetFlipbook(animations["idleUp"]);
 	
-	//Make character face camera at all times
-	FRotator SpringArmRotation = SpringArm->GetComponentRotation();
-	SpringArmRotation.Roll = -SpringArmRotation.Pitch;
-	SpringArmRotation.Yaw = 0.0f;
-	SpringArmRotation.Pitch = 0.0f;
-	CharacterFlipbook->SetWorldRotation(SpringArmRotation);
+	float spriteRes = 64.0;
+	float spriteGroundLevel = 5.0;
+	
+	float actorScale = 300.0;
+	
+	float spriteRoll = FMath::DegreesToRadians(CharacterFlipbook->GetComponentRotation().Roll);
+	
+	float halfHeight = cos(spriteRoll)*(spriteRes/2-spriteGroundLevel);
+	
+	CharacterCollider->SetCapsuleHalfHeight(halfHeight);
+	
+	SetActorScale3D(FVector(actorScale/spriteRes));
+
+	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
 }
 
 void AGame_PaperCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	switch(PlayerDirection)
+	if(inputVector.Length()>0)
 	{
-	case Direction::MovingUp:
-		if (CurrentVelocity.X == 0 && CurrentVelocity.Y == 0)
+		this->AddMovementInput(inputVector.GetSafeNormal2D());
+		direction=CharacterMovementComp->Velocity.GetSafeNormal2D();
+	}
+	float animationProgress;
+	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.9)
+	{
+		animationProgress = CharacterFlipbook->GetPlaybackPosition();
+		setDirectionalAnimation(direction,"run");
+		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
+		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),500);
+		if(CharacterFlipbook->GetPlaybackPositionInFrames()==10 || CharacterFlipbook->GetPlaybackPositionInFrames()==22)
 		{
-			PlayerDirection = Direction::Up;
-			CharacterFlipbook->SetFlipbook(IdleUpAnim);
+			audioSource->Stop();
+			audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
+			audioSource->Play();
 		}
-		else CharacterFlipbook->SetFlipbook(MovingUpAnim);
-		break;
-	case Direction::MovingLeft:
-		if (CurrentVelocity.X == 0 && CurrentVelocity.Y == 0)
+	}
+	else if(CharacterMovementComp->Velocity.Length()>0)
+	{
+		animationProgress = CharacterFlipbook->GetPlaybackPosition();
+		setDirectionalAnimation(direction,"walk");
+		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),300);
+		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
+		if(CharacterFlipbook->GetPlaybackPositionInFrames()==11 || CharacterFlipbook->GetPlaybackPositionInFrames()==26)
 		{
-			PlayerDirection = Direction::Left;
-			CharacterFlipbook->SetFlipbook(IdleLeftAnim);
+			audioSource->Stop();
+			audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
+			audioSource->Play();
 		}
-		else CharacterFlipbook->SetFlipbook(MovingLeftAnim);
-		break;
-	case Direction::MovingRight:
-		if (CurrentVelocity.X == 0 && CurrentVelocity.Y == 0)
-		{
-			PlayerDirection = Direction::Right;
-			CharacterFlipbook->SetFlipbook(IdleRightAnim);
-		}
-		else CharacterFlipbook->SetFlipbook(MovingRightAnim);
-		break;
-	case Direction::MovingDown:
-		if (CurrentVelocity.X == 0 && CurrentVelocity.Y == 0)
-		{
-			PlayerDirection = Direction::Down;
-			CharacterFlipbook->SetFlipbook(IdleDownAnim);
-		}
-		else CharacterFlipbook->SetFlipbook(MovingDownAnim);
-		break;
+	}
+	else
+	{
+		setDirectionalAnimation(direction,"idle");
+		CharacterFlipbook->SetPlayRate(1);
 	}
 }
 
@@ -147,7 +157,6 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 void AGame_PaperCharacter::SetupPlayerInputComponent(class UInputComponent* InputComponents)
 {
 	Super::SetupPlayerInputComponent(InputComponents);
-	
 	// Bind the controls
 	InputComponents->BindAction("Pickup", IE_Pressed, this, &AGame_PaperCharacter::Pickup);
 	InputComponents->BindAction("Inventory", IE_Pressed, this, &AGame_PaperCharacter::OpenInventory);
@@ -162,9 +171,7 @@ void AGame_PaperCharacter::Move_XAxis(float AxisValue)
 	if (AxisValue) PlayerDirection = Direction::MovingRight;
 	if (AxisValue == -1) PlayerDirection = Direction::MovingLeft;
 	
-	// Move at 100 units per second forward or backward
-	CurrentVelocity.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
-	this->AddMovementInput(this->GetActorForwardVector() * CurrentVelocity.X);
+	inputVector.X = AxisValue;
 }
 
 void AGame_PaperCharacter::Move_YAxis(float AxisValue)
@@ -172,9 +179,7 @@ void AGame_PaperCharacter::Move_YAxis(float AxisValue)
 	if (AxisValue) PlayerDirection = Direction::MovingUp;
 	if (AxisValue == -1) PlayerDirection = Direction::MovingDown;
 	
-	// Move at 100 units per second right or left
-	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
-	this->AddMovementInput(this->GetActorRightVector() * CurrentVelocity.Y);
+	inputVector.Y = AxisValue;
 }
 
 /** When player in item_base zone, place item in held_item */
@@ -192,7 +197,6 @@ void AGame_PaperCharacter::Pickup()
 				AItem_Base* CurrentItem = Cast<AItem_Base>(Actor);
 				Current_HeldItem = CurrentItem->ItemToGive;
 				Mesh_HeldItem->SetStaticMesh(CurrentItem->ItemToGive->Mesh);
-				PickupItemEvent.Broadcast();
 				break;
 			}
 		}

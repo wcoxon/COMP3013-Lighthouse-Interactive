@@ -6,9 +6,11 @@
 #include "CoreMinimal.h"
 #include "Item.h"
 #include "PaperCharacter.h"
+#include "Agent_PaperCharacter.h"
 #include "PaperFlipbookComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+
 #include "Game_PaperCharacter.generated.h"
 
 /**
@@ -31,7 +33,7 @@ enum class Direction : uint8 {
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPickupItem);
 
 UCLASS()
-class COMP3013_API AGame_PaperCharacter : public APaperCharacter
+class COMP3013_API AGame_PaperCharacter : public AAgent_PaperCharacter
 {
 	GENERATED_BODY()
 
@@ -59,29 +61,6 @@ public:
 	UStaticMeshComponent* Mesh_HeldItem;
 	
 	//Animations
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* IdleDownAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* IdleUpAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* IdleLeftAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* IdleRightAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* MovingDownAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* MovingUpAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* MovingLeftAnim;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animations)
-	UPaperFlipbook* MovingRightAnim;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
@@ -92,7 +71,7 @@ public:
 	void Pickup();
 	void OpenInventory();
 	void Conceal();
-	FVector CurrentVelocity;
+	FVector inputVector;
 	bool PlayerStateChange = false;
 
 	//Direct asset reference -> Inventory HUD widget
@@ -122,10 +101,5 @@ protected:
 	virtual void BeginPlay() override;
 	
 private:
-
-	//Grab default components of class
-	UPaperFlipbookComponent* CharacterFlipbook = GetSprite();
-	UCapsuleComponent* CharacterCollider = GetCapsuleComponent();
-	UCharacterMovementComponent* CharacterMovementComp = GetCharacterMovement();
 	
 };

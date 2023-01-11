@@ -22,7 +22,7 @@ public:
 	TSubclassOf<APaperCharacter> Character;
 
 	UPROPERTY(EditAnywhere)
-	float PlayerSize = 10;
+	float PlayerSize = 1;
 
 protected:
 	// Called when the game starts or when spawned
