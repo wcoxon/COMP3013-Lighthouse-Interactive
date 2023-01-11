@@ -58,8 +58,10 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	moveSpeed=800;
 	CharacterMovementComp->MovementMode=MOVE_Walking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
-	CharacterMovementComp->MaxAcceleration = 1200.0f;
-	CharacterMovementComp->BrakingFrictionFactor = 0.1f;
+	CharacterMovementComp->MaxAcceleration = 8000.0f;
+	CharacterMovementComp->BrakingFrictionFactor = 2.0f;
+	CharacterMovementComp->BrakingDecelerationWalking = 1200.0f;
+	
 	
 	//Assign HUD element
 	static ConstructorHelpers::FClassFinder<UUserWidget> hudWidgetObj (TEXT ("/Game/UserInterface/WIDGET_Inventory"));
@@ -161,6 +163,8 @@ void AGame_PaperCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 	InputComponents->BindAction("Pickup", IE_Pressed, this, &AGame_PaperCharacter::Pickup);
 	InputComponents->BindAction("Inventory", IE_Pressed, this, &AGame_PaperCharacter::OpenInventory);
 	InputComponents->BindAction("Conceal", IE_Pressed, this, &AGame_PaperCharacter::Conceal);
+	InputComponents->BindAction("Sprint", IE_Pressed, this, &AGame_PaperCharacter::SprintOn);
+	InputComponents->BindAction("Sprint", IE_Released, this, &AGame_PaperCharacter::SprintOff);
 	InputComponents->BindAxis("MoveX", this, &AGame_PaperCharacter::Move_XAxis);
 	InputComponents->BindAxis("MoveY", this, &AGame_PaperCharacter::Move_YAxis);
 }
@@ -180,6 +184,14 @@ void AGame_PaperCharacter::Move_YAxis(float AxisValue)
 	if (AxisValue == -1) PlayerDirection = Direction::MovingDown;
 	
 	inputVector.Y = AxisValue;
+}
+
+void AGame_PaperCharacter::SprintOn() {
+	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
+}
+
+void AGame_PaperCharacter::SprintOff() {
+	CharacterMovementComp->MaxWalkSpeed = 500.0f;
 }
 
 /** When player in item_base zone, place item in held_item */

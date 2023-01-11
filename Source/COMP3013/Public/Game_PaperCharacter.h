@@ -68,6 +68,8 @@ public:
 	//Player input functions and data
 	void Move_XAxis(float AxisValue);
 	void Move_YAxis(float AxisValue);
+	void SprintOn();
+	void SprintOff();
 	void Pickup();
 	void OpenInventory();
 	void Conceal();
