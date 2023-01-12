@@ -26,17 +26,42 @@ void AAgent_PaperCharacter::setAnimationRateToSpeed(UPaperFlipbookComponent* fli
 void AAgent_PaperCharacter::setDirectionalAnimation(FVector animDirection, FString actionString)
 {
 	FString directionString;
+
+	float angle = FMath::RadiansToDegrees(animDirection.HeadingAngle());
+
+	if(angle>-135-45/2.0f && angle<-135+45/2.0f)
+	{
+		directionString="DL";
+	}
+	if(angle>-90-45/2.0f && angle<-90+45/2.0f)
+	{
+		directionString="Down";
+	}
+	if(angle>-45-45/2.0f && angle<-45/2.0f)
+	{
+		directionString="DR";
+	}
+	if(angle>-45/2.0f && angle<45.0f-45/2.0f)
+	{
+		directionString="Right";
+	}
+	if(angle>45.0f-45/2.0f && angle<45.0f+45/2.0f)
+	{
+		directionString="UR";
+	}
+	if(angle>90.0f-45/2.0f && angle<90.0f+45/2.0f)
+	{
+		directionString="Up";
+	}
+	if(angle>135.0f-45/2.0f && angle<135.0f+45/2.0f)
+	{
+		directionString="UL";
+	}
+	if(angle>180-45/2.0f || angle<-180+45/2.0f)
+	{
+		directionString="Left";
+	}
 	
-	if(abs(animDirection.Y)>abs(animDirection.X))
-	{
-		if(animDirection.Y>0) directionString="Up";
-		else directionString="Down";
-	}
-	else if(abs(animDirection.Y)<abs(animDirection.X))
-	{
-		if(animDirection.X>0) directionString="Right";
-		else directionString="Left";
-	}
 	if(animations.Find(actionString+directionString)!=nullptr)
 	{
 		CharacterFlipbook->SetFlipbook(animations[actionString+directionString]);
