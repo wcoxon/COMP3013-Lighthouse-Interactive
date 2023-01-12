@@ -9,6 +9,8 @@
 #include "Agent_PaperCharacter.h"
 #include "PaperFlipbookComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/PostProcessComponent.h"
+#include "Engine/PostProcessVolume.h"
 #include "GameFramework/SpringArmComponent.h"
 
 #include "Game_PaperCharacter.generated.h"
@@ -30,7 +32,18 @@ enum class Direction : uint8 {
 	MovingRight        UMETA(DisplayName="Right")
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPickupItem);
+UENUM(BlueprintType)
+enum class EEPlayerState : uint8 {
+	Idle       UMETA(DisplayName="Idle"),
+	Walking        UMETA(DisplayName="Walking"),
+	Running        UMETA(DisplayName="Running"),
+	Concealing        UMETA(DisplayName="Concealing"),
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FConcealItem);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRefreshItemHUD);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractionBar);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSusMeterChange);
 
 UCLASS()
 class COMP3013_API AGame_PaperCharacter : public AAgent_PaperCharacter
@@ -59,11 +72,15 @@ public:
 	//HeldItemMesh
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh_HeldItem;
-	
-	//Animations
 
+	//Postproceser
+	UPROPERTY(VisibleAnywhere)
+	APostProcessVolume* PostProcess;
+
+	//Animations
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
+
 	
 	//Player input functions and data
 	void Move_XAxis(float AxisValue);
@@ -81,21 +98,63 @@ public:
 	class UUserWidget* HUDWidgetMain;
 
 	//Direction Enum
-	UPROPERTY(VisibleAnywhere, Category = Enums)
+	UPROPERTY(VisibleAnywhere, Category = "Enums")
 	Direction PlayerDirection = Direction::Down;
 
+	//Player State Enum
+	UPROPERTY(VisibleAnywhere, Category = "Enums")
+	EEPlayerState mPlayerState = EEPlayerState::Idle;
+	UPROPERTY(VisibleAnywhere, Category = "Enums")
+	EEPlayerState mPreviousState = EEPlayerState::Idle;
+
+	
 	//PLAYER VARS
-	UPROPERTY(VisibleAnywhere, Category = Stats)
+	UPROPERTY(VisibleAnywhere, Category = "Stats")
 	FString P_HeldItem = "";
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	UItem* Current_HeldItem;
 	
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void Destroy(UItem* Item);
 
 	UPROPERTY(BlueprintAssignable)
-	FPickupItem PickupItemEvent;
+	FRefreshItemHUD RefreshItemHUDEvent;
+
+	float WalkSpeed;
+	
+
+	//Suspiscison meter
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
+	float SusMeter;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
+	float SusMeterMax = 2.0f;
+
+	UPROPERTY(BlueprintAssignable, Category = "Sussy")
+	FSusMeterChange SusMeterChangeEvent;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Sussy")
+	bool mEndGame = false;
+	
+	UFUNCTION(BlueprintCallable, Category = "Sussy")
+	void endGamePass();
+	
+	//Concealing Data
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Concealing")
+	float TimeConcealing;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Concealing")
+	float TimeToConceal = 3.0f;
+
+	UPROPERTY(BlueprintAssignable)
+	FConcealItem ConcealItemEvent;
+
+	UPROPERTY(BlueprintAssignable)
+	FInteractionBar InteractionBarEvent;
+
+	UFUNCTION(BlueprintCallable, Category = "Detection")
+	void DetectionCheck(float DeltaTime);
 	
 protected:
 	
@@ -103,5 +162,9 @@ protected:
 	virtual void BeginPlay() override;
 	
 private:
-	
+	void StateManager(float deltatime);
+
+	//Player Seen Data
+	bool isSeen;
+
 };

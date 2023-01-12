@@ -22,7 +22,7 @@
 AGame_PaperCharacter::AGame_PaperCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
+	
 	//Construct Components
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
@@ -43,7 +43,7 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	SpringArm->bDoCollisionTest = false;
 
 	//HeldItemLocation
-	Mesh_HeldItem->SetRelativeLocationAndRotation(FVector(0, 0, 15), FRotator(0, 0, 90));
+	Mesh_HeldItem->SetRelativeLocationAndRotation(FVector(0, 0, 37), FRotator(0, 0, 90));
 	Mesh_HeldItem->SetRelativeScale3D(FVector(0.15f,0.15f,0.15f));
 	Mesh_HeldItem->CastShadow = false;
 	
@@ -56,12 +56,18 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	
 	//Movement System Settings
 	moveSpeed=800;
+	WalkSpeed=500.0f;
 	CharacterMovementComp->MovementMode=MOVE_Walking;
-	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
+	CharacterMovementComp->MaxWalkSpeed = WalkSpeed;
 	CharacterMovementComp->MaxAcceleration = 8000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 2.0f;
 	CharacterMovementComp->BrakingDecelerationWalking = 1200.0f;
-	
+
+	//Player Defaults
+	SusMeter = 0.0f;
+	TimeConcealing = 0.0f;
+	TimeToConceal = 3.0f;
+	isSeen = false;
 	
 	//Assign HUD element
 	static ConstructorHelpers::FClassFinder<UUserWidget> hudWidgetObj (TEXT ("/Game/UserInterface/WIDGET_Inventory"));
@@ -79,6 +85,7 @@ void AGame_PaperCharacter::Destroy(UItem* Item)
 void AGame_PaperCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
 	//Grab character animations
 	animations.Add(FString("runLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunLeft64.PlayerRunLeft64"), NULL, LOAD_None, NULL));
 	animations.Add(FString("runRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunRight64.PlayerRunRight64"), NULL, LOAD_None, NULL));
@@ -96,6 +103,8 @@ void AGame_PaperCharacter::BeginPlay()
 	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleDown64.PlayerIdleDown64"), NULL, LOAD_None, NULL));
 
 	CharacterFlipbook->SetFlipbook(animations["idleUp"]);
+
+	PostProcess = Cast<APostProcessVolume>(UGameplayStatics::GetActorOfClass(GetWorld(), APostProcessVolume::StaticClass()));
 	
 	float spriteRes = 64.0;
 	float spriteGroundLevel = 5.0;
@@ -113,46 +122,30 @@ void AGame_PaperCharacter::BeginPlay()
 	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
 }
 
+
 void AGame_PaperCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	//Defaults
+	isSeen = false;
+	mPreviousState = mPlayerState;
 	if(inputVector.Length()>0)
 	{
 		this->AddMovementInput(inputVector.GetSafeNormal2D());
 		direction=CharacterMovementComp->Velocity.GetSafeNormal2D();
 	}
-	float animationProgress;
-	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.9)
-	{
-		animationProgress = CharacterFlipbook->GetPlaybackPosition();
-		setDirectionalAnimation(direction,"run");
-		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
-		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),500);
-		if(CharacterFlipbook->GetPlaybackPositionInFrames()==10 || CharacterFlipbook->GetPlaybackPositionInFrames()==22)
-		{
-			audioSource->Stop();
-			audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
-			audioSource->Play();
-		}
+	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.9) mPlayerState = EEPlayerState::Running;
+	else if(CharacterMovementComp->Velocity.Length() > 0) mPlayerState = EEPlayerState::Walking;
+	if(CharacterMovementComp->Velocity.Length() == 0 && mPlayerState != EEPlayerState::Concealing) mPlayerState = EEPlayerState::Idle;
+
+
+	if (mPreviousState != mPlayerState && mPreviousState == EEPlayerState::Concealing) {
+		TimeConcealing = 0;
+		InteractionBarEvent.Broadcast();
 	}
-	else if(CharacterMovementComp->Velocity.Length()>0)
-	{
-		animationProgress = CharacterFlipbook->GetPlaybackPosition();
-		setDirectionalAnimation(direction,"walk");
-		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),300);
-		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
-		if(CharacterFlipbook->GetPlaybackPositionInFrames()==11 || CharacterFlipbook->GetPlaybackPositionInFrames()==26)
-		{
-			audioSource->Stop();
-			audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
-			audioSource->Play();
-		}
-	}
-	else
-	{
-		setDirectionalAnimation(direction,"idle");
-		CharacterFlipbook->SetPlayRate(1);
-	}
+	StateManager(DeltaTime);
+	endGamePass();
 }
 
 //UNREAL DEFAULT FUNCTION - Bind inputs to functions
@@ -191,7 +184,7 @@ void AGame_PaperCharacter::SprintOn() {
 }
 
 void AGame_PaperCharacter::SprintOff() {
-	CharacterMovementComp->MaxWalkSpeed = 500.0f;
+	CharacterMovementComp->MaxWalkSpeed = WalkSpeed;
 }
 
 /** When player in item_base zone, place item in held_item */
@@ -209,6 +202,7 @@ void AGame_PaperCharacter::Pickup()
 				AItem_Base* CurrentItem = Cast<AItem_Base>(Actor);
 				Current_HeldItem = CurrentItem->ItemToGive;
 				Mesh_HeldItem->SetStaticMesh(CurrentItem->ItemToGive->Mesh);
+				RefreshItemHUDEvent.Broadcast();
 				break;
 			}
 		}
@@ -232,11 +226,85 @@ void AGame_PaperCharacter::OpenInventory()
 /** Player placing item in their inventory */
 void AGame_PaperCharacter::Conceal()
 {
-	if (Current_HeldItem != nullptr && Inventory->Capacity > Inventory->Items.Num())
+	if (Current_HeldItem != nullptr && Inventory->Capacity > Inventory->Items.Num() && mPlayerState != EEPlayerState::Concealing)
 	{
-		Inventory->AddItem(Current_HeldItem);
-		Current_HeldItem = nullptr;
-		PickupItemEvent.Broadcast();
-		Mesh_HeldItem->SetVisibility(false);
+		mPlayerState = EEPlayerState::Concealing;
 	}
+}
+
+/** Handles actions based on PlayerState */
+void AGame_PaperCharacter::StateManager(float deltatime) {
+
+	float animationProgress;
+	switch (mPlayerState) {
+	case EEPlayerState::Idle:
+		setDirectionalAnimation(direction,"idle");
+		CharacterFlipbook->SetPlayRate(1);
+		break;
+	case EEPlayerState::Walking:
+		animationProgress = CharacterFlipbook->GetPlaybackPosition();
+		setDirectionalAnimation(direction,"walk");
+		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),300);
+		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
+		if(CharacterFlipbook->GetPlaybackPositionInFrames()==11 || CharacterFlipbook->GetPlaybackPositionInFrames()==26)
+		{
+			audioSource->Stop();
+			audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
+			audioSource->Play();
+		}
+		break;
+	case EEPlayerState::Running:
+		animationProgress = CharacterFlipbook->GetPlaybackPosition();
+		setDirectionalAnimation(direction,"run");
+		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
+		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),500);
+		if(CharacterFlipbook->GetPlaybackPositionInFrames()==10 || CharacterFlipbook->GetPlaybackPositionInFrames()==22)
+		{
+			audioSource->Stop();
+			audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
+			audioSource->Play();
+		}
+		break;
+	case EEPlayerState::Concealing:
+		TimeConcealing += deltatime;
+		InteractionBarEvent.Broadcast();
+		if (TimeConcealing >= TimeToConceal) {
+			TimeConcealing = 0;
+			mPlayerState = EEPlayerState::Idle;
+			Inventory->AddItem(Current_HeldItem);
+			Current_HeldItem = nullptr;
+			ConcealItemEvent.Broadcast();
+			RefreshItemHUDEvent.Broadcast();
+			InteractionBarEvent.Broadcast();
+			Mesh_HeldItem->SetVisibility(false);
+		}
+		break;
+	}
+	
+		
+}
+
+void AGame_PaperCharacter::endGamePass() {
+	if (SusMeter >= SusMeterMax && mEndGame == false) {
+		mEndGame = true;
+		PostProcess->Settings.VignetteIntensity += 0.10f;
+	}
+}
+
+void AGame_PaperCharacter::DetectionCheck(float DeltaTime) {
+	if (isSeen) return;
+	
+	switch (mPlayerState) {
+		case EEPlayerState::Concealing:
+			SusMeter += DeltaTime;
+			SusMeterChangeEvent.Broadcast();
+			PostProcess->Settings.VignetteIntensity += DeltaTime / 8;
+			break;
+		case EEPlayerState::Running:
+			SusMeter += DeltaTime * 0.5f;
+			SusMeterChangeEvent.Broadcast();
+			PostProcess->Settings.VignetteIntensity += DeltaTime / 8;
+			break;
+	}
+	isSeen = true;
 }
