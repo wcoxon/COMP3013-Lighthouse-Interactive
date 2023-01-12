@@ -127,7 +127,7 @@ void ANPCBase::BeginPlay()
 	
 	//finding player pawn and binding pickup delegate
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
-	player->PickupItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerPickup,TEXT("playerPickup"));
+	player->ConcealItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerPickup,TEXT("playerPickup"));
 
 	//initialising nav path
 	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
@@ -234,7 +234,6 @@ void ANPCBase::Tick(float DeltaSeconds)
 	switch(currentState)
 	{
 	case patrol:
-		
 		if(waitCounter<5)
 		{
 			waitCounter+=DeltaSeconds;
@@ -304,6 +303,7 @@ void ANPCBase::Tick(float DeltaSeconds)
 	
 	if(detectsPlayer())
 	{
+		player->DetectionCheck(DeltaSeconds);
 		if(currentState==alerted)
 		{
 			coneLight->SetLightColor(FLinearColor(1,0.0,0.0));
