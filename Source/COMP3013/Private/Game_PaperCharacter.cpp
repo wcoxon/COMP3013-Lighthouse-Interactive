@@ -59,14 +59,12 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	WalkSpeed=500.0f;
 	CharacterMovementComp->MovementMode=MOVE_Walking;
 	CharacterMovementComp->MaxWalkSpeed = WalkSpeed;
-	CharacterMovementComp->MaxAcceleration = 8000.0f;
+	CharacterMovementComp->MaxAcceleration = 3000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 2.0f;
-	CharacterMovementComp->BrakingDecelerationWalking = 1200.0f;
+	CharacterMovementComp->BrakingDecelerationWalking = 1000.0f;
 
 	//Player Defaults
-	SusMeter = 0.0f;
-	TimeConcealing = 0.0f;
-	TimeToConceal = 3.0f;
+	Suspicion = .0f;
 	isSeen = false;
 	
 	//Assign HUD element
@@ -145,23 +143,22 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 
 	//Defaults
 	isSeen = false;
-	mPreviousState = mPlayerState;
+	
 	if(inputVector.Length()>0)
 	{
 		this->AddMovementInput(inputVector.GetSafeNormal2D());
 		direction=CharacterMovementComp->Velocity.GetSafeNormal2D();
 	}
-	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.9) mPlayerState = EEPlayerState::Running;
-	else if(CharacterMovementComp->Velocity.Length() > 0) mPlayerState = EEPlayerState::Walking;
-	if(CharacterMovementComp->Velocity.Length() == 0 && mPlayerState != EEPlayerState::Concealing) mPlayerState = EEPlayerState::Idle;
-
-
-	if (mPreviousState != mPlayerState && mPreviousState == EEPlayerState::Concealing) {
-		TimeConcealing = 0;
-		InteractionBarEvent.Broadcast();
+	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.8) currentState = Run;
+	else if(CharacterMovementComp->Velocity.Length() > 0) currentState = Walk;
+	else currentState = Idle;
+	
+	if (currentAction==conceal) {
+		//broadcast to update ui
+		actionProgressEvent.Broadcast();
 	}
+	
 	StateManager(DeltaTime);
-	endGamePass();
 }
 
 //UNREAL DEFAULT FUNCTION - Bind inputs to functions
@@ -179,26 +176,15 @@ void AGame_PaperCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 }
 
 //Player movement functions for XY
-void AGame_PaperCharacter::Move_XAxis(float AxisValue)
-{
-	if (AxisValue) PlayerDirection = Direction::MovingRight;
-	if (AxisValue == -1) PlayerDirection = Direction::MovingLeft;
-	
+void AGame_PaperCharacter::Move_XAxis(float AxisValue){
 	inputVector.X = AxisValue;
 }
-
-void AGame_PaperCharacter::Move_YAxis(float AxisValue)
-{
-	if (AxisValue) PlayerDirection = Direction::MovingUp;
-	if (AxisValue == -1) PlayerDirection = Direction::MovingDown;
-	
+void AGame_PaperCharacter::Move_YAxis(float AxisValue){
 	inputVector.Y = AxisValue;
 }
-
 void AGame_PaperCharacter::SprintOn() {
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 }
-
 void AGame_PaperCharacter::SprintOff() {
 	CharacterMovementComp->MaxWalkSpeed = WalkSpeed;
 }
@@ -242,9 +228,9 @@ void AGame_PaperCharacter::OpenInventory()
 /** Player placing item in their inventory */
 void AGame_PaperCharacter::Conceal()
 {
-	if (Current_HeldItem != nullptr && Inventory->Capacity > Inventory->Items.Num() && mPlayerState != EEPlayerState::Concealing)
+	if (Current_HeldItem != nullptr && Inventory->Capacity > Inventory->Items.Num())
 	{
-		mPlayerState = EEPlayerState::Concealing;
+		beginAction(conceal,4.0f,FTimerDelegate::CreateUFunction(this,FName("endAction")));
 	}
 }
 
@@ -252,12 +238,12 @@ void AGame_PaperCharacter::Conceal()
 void AGame_PaperCharacter::StateManager(float deltatime) {
 
 	float animationProgress;
-	switch (mPlayerState) {
-	case EEPlayerState::Idle:
+	switch (currentState) {
+	case Idle:
 		setDirectionalAnimation(direction,"idle");
 		CharacterFlipbook->SetPlayRate(1);
 		break;
-	case EEPlayerState::Walking:
+	case Walk:
 		animationProgress = CharacterFlipbook->GetPlaybackPosition();
 		setDirectionalAnimation(direction,"walk");
 		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),300);
@@ -269,7 +255,7 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 			audioSource->Play();
 		}
 		break;
-	case EEPlayerState::Running:
+	case Run:
 		animationProgress = CharacterFlipbook->GetPlaybackPosition();
 		setDirectionalAnimation(direction,"run");
 		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
@@ -281,7 +267,7 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 			audioSource->Play();
 		}
 		break;
-	case EEPlayerState::Concealing:
+	/*case PlayerState::Concealing:
 		TimeConcealing += deltatime;
 		InteractionBarEvent.Broadcast();
 		if (TimeConcealing >= TimeToConceal) {
@@ -294,24 +280,24 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 			InteractionBarEvent.Broadcast();
 			Mesh_HeldItem->SetVisibility(false);
 		}
-		break;
+		break;*/
 	}
 	
 		
 }
 
-void AGame_PaperCharacter::endGamePass() {
-	if (SusMeter >= SusMeterMax && mEndGame == false) {
-		mEndGame = true;
-		PostProcess->Settings.VignetteIntensity += 0.10f;
+/*void AGame_PaperCharacter::endGamePass() {
+	if (Suspicion >= 100.0f) {
+		//PostProcess->Settings.VignetteIntensity += 0.10f;
+		
 	}
-}
-
+}*/
+/*
 void AGame_PaperCharacter::DetectionCheck(float DeltaTime) {
 	if (isSeen) return;
 	
-	switch (mPlayerState) {
-		case EEPlayerState::Concealing:
+	switch (currentAction) {
+		case conceal:
 			SusMeter += DeltaTime;
 			SusMeterChangeEvent.Broadcast();
 			PostProcess->Settings.VignetteIntensity += DeltaTime / 8;
@@ -323,4 +309,4 @@ void AGame_PaperCharacter::DetectionCheck(float DeltaTime) {
 			break;
 	}
 	isSeen = true;
-}
+}*/

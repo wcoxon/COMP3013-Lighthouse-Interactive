@@ -33,11 +33,10 @@ enum class Direction : uint8 {
 };
 
 UENUM(BlueprintType)
-enum class EEPlayerState : uint8 {
+enum MovementState{
 	Idle       UMETA(DisplayName="Idle"),
-	Walking        UMETA(DisplayName="Walking"),
-	Running        UMETA(DisplayName="Running"),
-	Concealing        UMETA(DisplayName="Concealing"),
+	Walk        UMETA(DisplayName="Walking"),
+	Run        UMETA(DisplayName="Running"),
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FConcealItem);
@@ -93,20 +92,11 @@ public:
 	FVector inputVector;
 	bool PlayerStateChange = false;
 
+	MovementState currentState;
+	
 	//Direct asset reference -> Inventory HUD widget
 	class UClass* HUDWidgetClass;
 	class UUserWidget* HUDWidgetMain;
-
-	//Direction Enum
-	UPROPERTY(VisibleAnywhere, Category = "Enums")
-	Direction PlayerDirection = Direction::Down;
-
-	//Player State Enum
-	UPROPERTY(VisibleAnywhere, Category = "Enums")
-	EEPlayerState mPlayerState = EEPlayerState::Idle;
-	UPROPERTY(VisibleAnywhere, Category = "Enums")
-	EEPlayerState mPreviousState = EEPlayerState::Idle;
-
 	
 	//PLAYER VARS
 	UPROPERTY(VisibleAnywhere, Category = "Stats")
@@ -123,38 +113,13 @@ public:
 
 	float WalkSpeed;
 	
-
-	//Suspiscison meter
+	//Suspicion meter
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
-	float SusMeter;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
-	float SusMeterMax = 2.0f;
-
-	UPROPERTY(BlueprintAssignable, Category = "Sussy")
-	FSusMeterChange SusMeterChangeEvent;
-	
-	UPROPERTY(VisibleAnywhere, Category = "Sussy")
-	bool mEndGame = false;
-	
-	UFUNCTION(BlueprintCallable, Category = "Sussy")
-	void endGamePass();
-	
-	//Concealing Data
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Concealing")
-	float TimeConcealing;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Concealing")
-	float TimeToConceal = 3.0f;
+	float Suspicion=.0f;
 
 	UPROPERTY(BlueprintAssignable)
-	FConcealItem ConcealItemEvent;
+	FInteractionBar actionProgressEvent;
 
-	UPROPERTY(BlueprintAssignable)
-	FInteractionBar InteractionBarEvent;
-
-	UFUNCTION(BlueprintCallable, Category = "Detection")
-	void DetectionCheck(float DeltaTime);
 	
 protected:
 	
