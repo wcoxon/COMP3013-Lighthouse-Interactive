@@ -49,7 +49,10 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
+	CharacterFlipbook->SetCustomDepthStencilValue(100);
 	CharacterCollider->SetRenderCustomDepth(true);
+	CharacterCollider->SetCustomDepthStencilValue(100);
+	CharacterFlipbook->BoundsScale = 3.5f;
 	
 	//Collider Settings
 	CharacterCollider->SetCapsuleRadius(6.6f);
