@@ -36,10 +36,10 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	Mesh_HeldItem->SetupAttachment(CharacterCollider);
 	
 	//Spring Arm Settings
-	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, -30.0f, 30.0f), FRotator(-40.0f, 90.0f, 0.0f));
-	SpringArm->TargetArmLength = 600.0f;
+	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, -30.0f, 30.0f), FRotator(-30.0f, 90.0f, 0.0f));
+	SpringArm->TargetArmLength = 650.0f;
 	SpringArm->bEnableCameraLag = true;
-	SpringArm->CameraLagSpeed = 6.0f;
+	SpringArm->CameraLagSpeed = 9.0f;
 	SpringArm->bDoCollisionTest = false;
 
 	//HeldItemLocation

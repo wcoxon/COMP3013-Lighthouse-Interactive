@@ -26,33 +26,50 @@ public:
 	// Sets default values for this actor's properties
 	ACamera();
 	
+	virtual void OnConstruction(const FTransform& Transform) override;
+	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	
 	EECameraState CameraState;
 	
-	void turnTowards(float target, float deltaTime);
+	void turnTowards(float target, float deltaTime, float speed);
 	void StateManager(float deltaTime);
 	void setState(EECameraState newState);
 	bool detectsPlayer();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float Angle1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float Angle2;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float turnSpeed;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float coneLength;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float coneAngle;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	float MinWait;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	float MaxWait;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera Mesh")
+	UStaticMeshComponent* CameraBase;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera Mesh")
+	UStaticMeshComponent* CameraBody;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera Mesh")
+	USceneComponent* CameraRoot;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera Light")
+	USpotLightComponent* coneLight;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -64,9 +81,11 @@ private:
 	float IdleDuration;
 	float IdleCurrentDuration;
 
+	float currentUnfollowingDuration;
+	float maxUnfollowDuration;
+	
 	UPROPERTY()
 	AGame_PaperCharacter* player;
-	UPROPERTY()
-	USpotLightComponent* coneLight;
+	
 
 };
