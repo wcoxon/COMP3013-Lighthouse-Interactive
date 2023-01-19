@@ -38,7 +38,6 @@ void AAgent_PaperCharacter::endAction()
 	GetWorldTimerManager().ClearTimer(actionTimerHandle);
 }
 
-
 void AAgent_PaperCharacter::setAnimationRateToSpeed(UPaperFlipbookComponent* flipbook, float speed,float animationDistance)
 {
 	float animationTime = flipbook->GetFlipbookLength();
@@ -83,12 +82,15 @@ void AAgent_PaperCharacter::BeginPlay()
 
 void grabItem(UItem* item)
 {
-	
+	//function for the grab item action which puts an item object into held slot for npcs or player
 }
 
 void AAgent_PaperCharacter::Tick(float DeltaTime)
 {
-	
+	if(currentAction!=nullAction && GetWorldTimerManager().GetTimerElapsed(actionTimerHandle)==-1.0f)
+	{
+		endAction();
+	}
 }
 
 void AAgent_PaperCharacter::moveTowards(FVector destination, float distance)

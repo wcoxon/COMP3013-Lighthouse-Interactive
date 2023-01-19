@@ -20,6 +20,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 private:
+	UPROPERTY()
 	ASecurityNPC* securityGuard;
+	UPROPERTY()
 	FVector playerLastSeen;
 };

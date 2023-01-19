@@ -1,4 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
+
 #include "SecurityNPC.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/AudioComponent.h"
@@ -7,11 +8,6 @@
 
 ASecurityNPC::ASecurityNPC()
 {
-	//initialising components
-	//coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("spotlightComp"));
-	//coneLight->SetupAttachment(CharacterCollider);
-	//audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
-
 	//assigning fields
 	coneRadius = 2000.0;
 	coneAngle = FMath::DegreesToRadians(60.0);
@@ -33,6 +29,7 @@ ASecurityNPC::ASecurityNPC()
 void ASecurityNPC::BeginPlay()
 {
 	Super::BeginPlay();
+	CharacterFlipbook->SetSpriteColor(FLinearColor(1.0f,0.0f,0.0f));
 }
 void ASecurityNPC::Tick(float DeltaSeconds)
 {
@@ -41,10 +38,13 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 	switch(currentState)
 	{
 	case pursue:
-		if(GetDistanceTo(player)>30.0f)
+		if(GetDistanceTo(player)<300.0f)
 		{
 			//ig they catch you in here
 			UE_LOG(LogTemp, Log, TEXT("Caught you lose"));
+			player->moveSpeed = 0;
+			player->WalkSpeed = 0;
+			player->SprintOn();
 			
 		}
 		if(detectsActor(player))
@@ -56,52 +56,48 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 			setState(search);
 		}
 		break;
+	default:
+		break;
 	}
-	
-	if(detectsActor(player))
+
+	switch(currentAction)
 	{
-		if(player->Suspicion>=100.0f)
-		{
-			setState(pursue);
-		}
-		else
-		{
-			switch(player->currentAction)
-			{
-			case conceal:
-				player->Suspicion = 100;
-				break;
-			default:
-				break;
-			}
-		
-			switch (player->currentState)
-			{
-			case Run:
-				player->Suspicion+= 10.0f*DeltaSeconds;
-				setState(stare);
-				break;
-			default:
-				break;
-			}
-		}
-		
-	}
-	//if there is a path (>1 point), follow it
-	if(tpath->PathPoints.Num()>1 && currentAction!=wait)
-	{
-		moveTowards(tpath->PathPoints[1],DeltaSeconds);
-		if(FVector2d::Distance(FVector2d(GetNavAgentLocation()),FVector2d(tpath->PathPoints[1]))<1)
-		{
-			tpath->PathPoints.RemoveAt(0);
-			setDirectionalAnimation(direction,"idle");
-			CharacterFlipbook->SetPlayRate(1);
-		}
-	}
-	else
-	{
+	case wait:
 		setDirectionalAnimation(coneDirection,"idle");
 		CharacterFlipbook->SetPlayRate(1);
+		break;
+	default:
+		if(tpath->PathPoints.Num()>1) followPath(DeltaSeconds);
+		else
+		{
+			setDirectionalAnimation(coneDirection,"idle");
+			CharacterFlipbook->SetPlayRate(1);
+		}
+		break;
+	}
+
+	if(!detectsActor(player)) return;
+	if(player->Suspicion>=100.0f) return setState(pursue);
+	
+	switch(player->currentAction)
+	{
+	case conceal:
+		player->Suspicion = 100;
+		break;
+				
+	default:
+		break;
+	}
+	
+	switch (player->currentState)
+	{
+	case Run:
+		player->Suspicion+= 10.0f*DeltaSeconds;
+		setState(stare);
+		break;
+				
+	default:
+		break;
 	}
 }
 

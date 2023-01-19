@@ -8,11 +8,6 @@
 
 AClerkNPC::AClerkNPC()
 {
-	//initialising components
-	//coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("spotlightComp"));
-	//coneLight->SetupAttachment(CharacterCollider);
-	//audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
-
 	//assigning fields
 	coneRadius = 2000.0;
 	coneAngle = FMath::DegreesToRadians(45.0);
@@ -39,52 +34,73 @@ void AClerkNPC::BeginPlay()
 void AClerkNPC::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
+	//behaviour based on current state
 	//subclass-specific state cases, clerks will tattle on you to security when they see you
 	switch(currentState)
 	{
 	case tattle:
-		if(GetDistanceTo(securityGuard)<50.0f)
+		//if close to security, bring them to last known player position and break
+		if(GetDistanceTo(securityGuard)<300.0f)
 		{
 			securityGuard->pathToTarget(playerLastSeen);
 			securityGuard->setState(pursue);
+			pathToTarget(playerLastSeen);
 			setState(search);
+			break;
 		}
-		else if(tpath->PathPoints.Num()==1)
-		{
-			pathToTarget(securityGuard->GetNavAgentLocation());
-		}
+		//if have path, break case
+		if(tpath->PathPoints.Num()>1) break;
+		//make path to security
+		pathToTarget(securityGuard->GetNavAgentLocation());
+		break;
+		
+	default:
 		break;
 	}
 	
-	if(detectsActor(player))
+	//behaviour based on current action
+	switch(currentAction)
 	{
-		playerLastSeen=player->GetNavAgentLocation();
-		if(player->Suspicion>=100.0f)
-		{
-			setState(tattle);
-		}
+	case wait:
+		setDirectionalAnimation(coneDirection,"idle");
+		CharacterFlipbook->SetPlayRate(1);
+		break;
+		
+	default:
+		if(tpath->PathPoints.Num()>1) followPath(DeltaSeconds);
 		else
 		{
-			switch(player->currentAction)
-			{
-			case conceal:
-				player->Suspicion = 100;
-				break;
-			default:
-				break;
-			}
-		
-			switch (player->currentState)
-			{
-			case Run:
-				player->Suspicion+= 10.0f*DeltaSeconds;
-				setState(stare);
-				break;
-			default:
-				break;
-			}
+			setDirectionalAnimation(coneDirection,"idle");
+			CharacterFlipbook->SetPlayRate(1);
 		}
-		
+		break;
+	}
+
+	//behaviour based on observed player
+	if(!detectsActor(player)) return;
+	playerLastSeen = player->GetNavAgentLocation();
+	if(player->Suspicion>=100.0f) return setState(tattle);
+
+	//player action
+	switch(player->currentAction)
+	{
+	case conceal:
+		player->Suspicion = 100;
+		break;
+	
+	default:
+		break;
+	}
+
+	//player state
+	switch (player->currentState)
+	{
+	case Run:
+		player->Suspicion+= 5.0f*DeltaSeconds;
+		setState(stare);
+		break;
+				
+	default:
+		break;
 	}
 }

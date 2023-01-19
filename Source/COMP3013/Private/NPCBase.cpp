@@ -45,6 +45,7 @@ ANPCBase::ANPCBase()
 
 void ANPCBase::setState(AIState state)
 {
+	if(currentState==state) return;
 	//interrupt any actions
 	endAction();
 	//set state to argument
@@ -170,10 +171,10 @@ void ANPCBase::BeginPlay()
 	coneLight->SetAttenuationRadius(coneRadius);
 
 	//initialising random patrol pattern containing 3 points
-	int patrolCount = 3;
+	int patrolCount = 2;
 	for(int x=0;x<patrolCount;x++)
 	{
-		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),1000));
+		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),2000));
 	}
 	
 	//set initial AI state to patrolling
@@ -256,7 +257,6 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 
 void ANPCBase::pathToTarget(FVector destination)
 {
-	currentAction=nullAction;
 	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
 	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),destination);
 	endAction();
@@ -284,108 +284,57 @@ void ANPCBase::Tick(float DeltaSeconds)
 		//for each point in patrol route
 		for(int patrolIndex = 0; patrolIndex<patrolPoints.Num();patrolIndex++)
 		{
-			//if point is path destination
-			if(tpath->PathPoints.Last().Equals(patrolPoints[patrolIndex]))
+			//if current destination isn't this patrol point, continue to next
+			if(!tpath->PathPoints.Last().Equals(patrolPoints[patrolIndex])) continue;
+			
+			//if destination point isn't reached, return to continue along it
+			if(tpath->PathPoints.Num()>1) return;
+			
+			//if point is last element in patrol route
+			if(patrolIndex==patrolPoints.Num()-1)
 			{
-				//if point is last element in patrol route
-				if(patrolPoints.Num()-1==patrolIndex)
-				{
-					//reverse the route 
-					Algo::Reverse(patrolPoints);
-					patrolIndex=0;
-				}
-				
-				//if point is reached and not waiting
-				if(tpath->PathPoints.Num()==1 && currentAction!=wait)
-				{
-					//wait 3 seconds to make path to next patrol point
-					beginAction(wait,3.0f,FTimerDelegate::CreateUFunction( this,FName("pathToTarget"),patrolPoints[patrolIndex+1]));
-				}
-				break;
-			}
-			//if last patrol point reached without any being current destination
-			else if(patrolIndex==patrolPoints.Num()-1)
-			{
-				//make path to first patrol point
-				pathToTarget(patrolPoints[0]);
+				//reverse the patrol route
+				Algo::Reverse(patrolPoints);
+				patrolIndex=0;
 			}
 			
+			//wait 3 seconds to make path to next patrol point
+			if(currentAction!=wait) beginAction(wait,3.0f,FTimerDelegate::CreateUFunction( this,FName("pathToTarget"),patrolPoints[patrolIndex+1]));
+
+			return;
+			
+			
+			
 		}
+		//if current path destination didn't match any patrol points, path to first patrol point
+		pathToTarget(patrolPoints[0]);
 		break;
+		
 	case search:
-		if(currentAction==wait) break;
-		if(tpath->PathPoints.Num()==1)
-		{
-			beginAction(wait,1.0f,FTimerDelegate::CreateUFunction( this,FName("endAction")));
-			UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
-			tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),1000));
-		}
+		//if our path has a next point, break case
+		if(tpath->PathPoints.Num()>1) break;
+		//wait 1 second before making path to random nearby position
+		if(currentAction!=wait) beginAction(wait,1.0f,FTimerDelegate::CreateUFunction( this,FName("pathToTarget"),UNavigationSystemV1::GetCurrent(GetWorld())->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),1000)));
+		
 		break;
+		
 	case stare:
-		//wait for 3 seconds to continue patrolling, if the player acts cringe start the wait over
-		if(currentAction!=wait || player->currentState==Run) beginAction(wait,3.0f,FTimerDelegate::CreateUFunction( this,FName("setState"),patrol));
-		if(detectsActor(player))
-		{
-			//turn to stare at player
-			turnTowards(player->GetNavAgentLocation(),DeltaSeconds);
-			setDirectionalAnimation(coneDirection,"idle");
-			CharacterFlipbook->SetPlayRate(1);
-		}
+		//after 2 seconds continue patrolling
+		if(currentAction!=wait) beginAction(wait,2.0f,FTimerDelegate::CreateUFunction( this,FName("setState"),patrol));
+
+		//if npc can't see player then break case
+		if(!detectsActor(player)) break;
+
+		//turn to stare at player
+		turnTowards(player->GetNavAgentLocation(),DeltaSeconds);
+		
+		//if the player acts cringe reset timer by starting wait over
+		if(player->currentState==Run) GetWorldTimerManager().ClearTimer(actionTimerHandle);
 		break;
+		
 	default:
 		break;
 	}
-	/*
-	if(detectsActor(player))
-	{
-		if(player->Suspicion>=100.0f)
-		{
-			setState(pursue);
-		}
-		else
-		{
-			switch(player->currentAction)
-			{
-			case conceal:
-				player->Suspicion = 100;
-				break;
-			default:
-				break;
-			}
-		
-			switch (player->currentState)
-			{
-			case Run:
-				player->Suspicion+= 10.0f*DeltaSeconds;
-				setState(stare);
-				break;
-			default:
-				break;
-			}
-		}
-		
-	}
-	*/
-	//if there is a path (>1 point), follow it
-	if(tpath->PathPoints.Num()>1 && currentAction!=wait)
-	{
-		moveTowards(tpath->PathPoints[1],DeltaSeconds);
-		if(FVector2d::Distance(FVector2d(GetNavAgentLocation()),FVector2d(tpath->PathPoints[1]))<1)
-		{
-			tpath->PathPoints.RemoveAt(0);
-			setDirectionalAnimation(direction,"idle");
-			CharacterFlipbook->SetPlayRate(1);
-		}
-	}
-	else
-	{
-		setDirectionalAnimation(coneDirection,"idle");
-		CharacterFlipbook->SetPlayRate(1);
-	}
-	//if(currentAction!=nullAction)
-	//{
-		//UE_LOG(LogTemp, Log, TEXT("%i %f"),GetUniqueID(),GetWorldTimerManager().GetTimerElapsed(actionTimerHandle));
-	//}
 }
 
 
