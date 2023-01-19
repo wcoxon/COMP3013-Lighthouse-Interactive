@@ -164,6 +164,7 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 		InteractionBarEvent.Broadcast();
 	}
 	StateManager(DeltaTime);
+	OcclusionPass();
 	endGamePass();
 }
 
@@ -326,4 +327,17 @@ void AGame_PaperCharacter::DetectionCheck(float DeltaTime) {
 			break;
 	}
 	isSeen = true;
+}
+
+void AGame_PaperCharacter::OcclusionPass() const {
+	
+	FVector playerLocation = GetActorLocation() + FVector(0.f,0.f,20.f);
+	FVector cameraLocation = Camera->GetComponentLocation();
+	FHitResult hitResult;
+	bool bHit = UKismetSystemLibrary::LineTraceSingle(this, playerLocation, cameraLocation, ETraceTypeQuery::TraceTypeQuery1, false, {}, EDrawDebugTrace::None, hitResult, true);
+	if (!bHit) {
+		PostProcess->Settings.WeightedBlendables.Array[2].Weight = 0;
+	} else {
+		PostProcess->Settings.WeightedBlendables.Array[2].Weight = 1;
+	}
 }

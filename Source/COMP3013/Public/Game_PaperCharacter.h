@@ -164,6 +164,8 @@ protected:
 private:
 	void StateManager(float deltatime);
 
+	void OcclusionPass() const;
+	
 	//Player Seen Data
 	bool isSeen;
 
