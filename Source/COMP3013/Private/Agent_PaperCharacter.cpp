@@ -77,7 +77,7 @@ void AAgent_PaperCharacter::BeginPlay()
 	CharacterFlipbook->CastShadow = true;
 	//CharacterCollider->SetCapsuleHalfHeight(6.6f);
 	//SetActorScale3D(FVector(10));
-	CharacterFlipbook->SetWorldRotation(FRotator(0.0f, 0.0f, 40.0f));
+	CharacterFlipbook->SetWorldRotation(FRotator(0.0f, 0.0f, 10.0f));
 }
 
 void grabItem(UItem* item)
