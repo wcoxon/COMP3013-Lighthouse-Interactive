@@ -39,6 +39,11 @@ enum MovementState{
 	Run        UMETA(DisplayName="Running"),
 };
 
+/*DECLARE_DYNAMIC_MULTICAST_DELEGATE(FConcealItem);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRefreshItemHUD);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractionBar);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSuspicionMeterChange);*/
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FConcealItem);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRefreshItemHUD);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractionBar);
@@ -116,10 +121,19 @@ public:
 	//Suspicion meter
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
 	float Suspicion=.0f;
-
+	
+	UPROPERTY(BlueprintAssignable, Category = "Sussy")
+	FSusMeterChange SusMeterChangeEvent;
+	
 	UPROPERTY(BlueprintAssignable)
-	FInteractionBar actionProgressEvent;
+	FInteractionBar InteractionBarEvent;
+	//FInteractionBar actionProgressEvent;
 
+	//UPROPERTY(BlueprintAssignable)
+	//FSuspicionMeterChange suspicionEvent;
+	
+	//represents whether the player was seen since the last tick
+	bool isSeen = false;
 	
 protected:
 	
@@ -128,8 +142,5 @@ protected:
 	
 private:
 	void StateManager(float deltatime);
-
-	//Player Seen Data
-	bool isSeen;
 
 };

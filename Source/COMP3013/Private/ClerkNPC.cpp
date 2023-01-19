@@ -78,29 +78,9 @@ void AClerkNPC::Tick(float DeltaSeconds)
 
 	//behaviour based on observed player
 	if(!detectsActor(player)) return;
+	player->isSeen = true;
 	playerLastSeen = player->GetNavAgentLocation();
 	if(player->Suspicion>=100.0f) return setState(tattle);
-
-	//player action
-	switch(player->currentAction)
-	{
-	case conceal:
-		player->Suspicion = 100;
-		break;
+	if(player->currentState==Run) return setState(stare);
 	
-	default:
-		break;
-	}
-
-	//player state
-	switch (player->currentState)
-	{
-	case Run:
-		player->Suspicion+= 5.0f*DeltaSeconds;
-		setState(stare);
-		break;
-				
-	default:
-		break;
-	}
 }

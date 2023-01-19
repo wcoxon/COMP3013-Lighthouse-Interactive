@@ -133,6 +133,9 @@ void AGame_PaperCharacter::BeginPlay()
 	SetActorScale3D(FVector(actorScale/spriteRes));
 
 	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
+
+	isSeen=false;
+
 }
 
 
@@ -140,9 +143,6 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 {
 	
 	Super::Tick(DeltaTime);
-
-	//Defaults
-	isSeen = false;
 	
 	if(inputVector.Length()>0)
 	{
@@ -155,10 +155,38 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	
 	if (currentAction==conceal) {
 		//broadcast to update ui
-		actionProgressEvent.Broadcast();
+		InteractionBarEvent.Broadcast();
 	}
 	
 	StateManager(DeltaTime);
+	
+	if(!isSeen) return;
+	
+	switch(currentAction)
+	{
+	case conceal:
+		Suspicion = 100.0f;
+		break;
+				
+	default:
+		break;
+	}
+	
+	switch (currentState)
+	{
+	case Run:
+		Suspicion+= 10.0f*DeltaTime;
+		break;
+				
+	default:
+		break;
+	}
+	//suspicionEvent.Broadcast();
+	SusMeterChangeEvent.Broadcast();
+	
+	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
+	//had an npc detect me since. i'll now know at the beginning of next tick if one of the npcs knocked this back to true
+	isSeen = false;
 }
 
 //UNREAL DEFAULT FUNCTION - Bind inputs to functions
@@ -230,7 +258,7 @@ void AGame_PaperCharacter::Conceal()
 {
 	if (Current_HeldItem != nullptr && Inventory->Capacity > Inventory->Items.Num())
 	{
-		beginAction(conceal,4.0f,FTimerDelegate::CreateUFunction(this,FName("endAction")));
+		beginAction(conceal,1.0f,FTimerDelegate::CreateUFunction(this,FName("endAction")));
 	}
 }
 

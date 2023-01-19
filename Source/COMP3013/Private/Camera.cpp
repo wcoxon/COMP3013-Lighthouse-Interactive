@@ -112,7 +112,7 @@ void ACamera::StateManager(float deltaTime)
 			float angle = FMath::RadiansToDegrees(FMath::Atan2(toPlayer.Y, toPlayer.X));
 			turnTowards(angle, deltaTime, 45.f);
 			currentUnfollowingDuration = 0.f;
-			player->DetectionCheck(deltaTime);
+			player->isSeen=true;
 		} else {
 			currentUnfollowingDuration += deltaTime;
 			if (currentUnfollowingDuration >= maxUnfollowDuration) {

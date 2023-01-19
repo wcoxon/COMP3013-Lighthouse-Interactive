@@ -10,16 +10,12 @@ AAgent_PaperCharacter::AAgent_PaperCharacter()
 {
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	CharacterFlipbook->SetRenderCustomDepth(true);
-	//CharacterFlipbook->BoundsScale = 10.0f;
 }
 
 void AAgent_PaperCharacter::beginAction(ActionType action, float duration, FTimerDelegate resultDelegate)
 {
 	//this is cool too because if we wanna we can make functions to call at the end of these timers,
 	//like picking up or concealing performing the action at the end of the timer
-	// = FTimerDelegate::CreateUObject( this,resultCallback,);
-	//endAction();
-	//UE_LOG(LogTemp, Log, TEXT("beginning action %i"),action);
 	currentAction = action;
 	
 	GetWorldTimerManager().SetTimer(
@@ -30,7 +26,6 @@ void AAgent_PaperCharacter::beginAction(ActionType action, float duration, FTime
 		duration
 		);
 	
-	//Delegate.BindUFunction(this, actionPtr,); 
 }
 void AAgent_PaperCharacter::endAction()
 {

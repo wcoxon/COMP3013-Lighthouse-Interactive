@@ -45,6 +45,7 @@ public:
 	UAudioComponent* audioSource;
 	
 	ActionType currentAction;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Action")
 	FTimerHandle actionTimerHandle;
 	
 protected:

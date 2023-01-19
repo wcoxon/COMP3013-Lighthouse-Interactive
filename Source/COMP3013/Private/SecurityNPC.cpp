@@ -77,27 +77,9 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 	}
 
 	if(!detectsActor(player)) return;
+	player->isSeen = true;
 	if(player->Suspicion>=100.0f) return setState(pursue);
+	if(player->currentState==Run) return setState(stare);
 	
-	switch(player->currentAction)
-	{
-	case conceal:
-		player->Suspicion = 100;
-		break;
-				
-	default:
-		break;
-	}
-	
-	switch (player->currentState)
-	{
-	case Run:
-		player->Suspicion+= 10.0f*DeltaSeconds;
-		setState(stare);
-		break;
-				
-	default:
-		break;
-	}
 }
 
