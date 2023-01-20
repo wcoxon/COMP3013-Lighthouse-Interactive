@@ -117,7 +117,7 @@ public:
 	
 	//Suspicion meter
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
-	float Suspicion=.0f;
+	float Suspicion= .0f;
 
 	UPROPERTY(BlueprintAssignable)
 	FRefreshItemHUD RefreshItemHUDEvent;
@@ -145,5 +145,7 @@ private:
 	void StateManager(float deltatime);
 
 	void OcclusionPass() const;
+
+	void SusMeterChange(float DeltaTime);
 
 };
