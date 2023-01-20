@@ -33,7 +33,7 @@ ANPCBase::ANPCBase()
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
 	//Enable Render Buffer - Used for LOS colour
-	CharacterFlipbook->SetRenderCustomDepth(true);
+	CharacterFlipbook->SetRenderCustomDepth(false);
 	
 	//setting up movement properties
 	moveSpeed = 300;
@@ -133,6 +133,7 @@ void ANPCBase::BeginPlay()
 
 	CharacterFlipbook->SetFlipbook(animations["idleRight"]);
 	
+	CharacterFlipbook->SetRenderCustomDepth(false);
 	//base height of the sprite i.e. how many pixels tall it is since pixels per unit is 1
 	float spriteHeight = 64.0;
 	//offset from the bottom of the sprite to the feet of the character

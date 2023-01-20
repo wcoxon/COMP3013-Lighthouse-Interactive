@@ -17,31 +17,22 @@ class COMP3013_API UItem : public UObject
 public:
 	UItem();
 
-	virtual class UWorld* GetWorld() const {return World;};
-
-	UPROPERTY(Transient)
-	UWorld* World;
-	
+	//flavour
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data")
+	FText Name;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data", meta = (MultiLine = true))
 	FText Description;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data")
-	UStaticMesh* Mesh;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data")
-	UTexture2D* Icon;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data")
-	FText Name;
-
+	//properties
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data", meta = (ClampMin = 0.0))
-	float Value;
-
+	float Price;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data", meta = (ClampMin = 0.0))
 	float Weight;
 
-	UPROPERTY()
-	class UPlayerInvComponent* Inventory;
+	//visuals
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data")
+	UStaticMesh* Mesh;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data")
+	UTexture2D* Icon;
 
-	virtual void Destroy(class AGame_PaperCharacter* Character) PURE_VIRTUAL (UItem);
 };

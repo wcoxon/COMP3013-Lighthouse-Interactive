@@ -74,8 +74,8 @@ public:
 	class UPlayerInvComponent* Inventory;
 
 	//HeldItemMesh
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* Mesh_HeldItem;
+	//UPROPERTY(VisibleAnywhere)
+	//UStaticMeshComponent* Mesh_HeldItem;
 
 	//Postproceser
 	UPROPERTY(VisibleAnywhere)
@@ -101,6 +101,8 @@ public:
 	//method for actually concealing the item
 	UFUNCTION()
 	void concealItem();
+	UFUNCTION()
+	void grabItem(UItem* item);
 
 	MovementState currentState;
 	
@@ -108,24 +110,17 @@ public:
 	class UClass* HUDWidgetClass;
 	class UUserWidget* HUDWidgetMain;
 	
-	//PLAYER VARS
-	UPROPERTY(VisibleAnywhere, Category = "Stats")
-	FString P_HeldItem = "";
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-	UItem* Current_HeldItem;
-	
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void Destroy(UItem* Item);
-
-	UPROPERTY(BlueprintAssignable)
-	FRefreshItemHUD RefreshItemHUDEvent;
+	//UFUNCTION(BlueprintCallable, Category = "Inventory")
+	//void Destroy(UItem* Item);
 
 	float WalkSpeed;
 	
 	//Suspicion meter
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
 	float Suspicion=.0f;
+
+	UPROPERTY(BlueprintAssignable)
+	FRefreshItemHUD RefreshItemHUDEvent;
 	
 	UPROPERTY(BlueprintAssignable, Category = "Sussy")
 	FSusMeterChange SusMeterChangeEvent;
@@ -138,6 +133,7 @@ public:
 	//FSuspicionMeterChange suspicionEvent;
 	
 	//represents whether the player was seen since the last tick
+	
 	bool isSeen = false;
 	
 protected:

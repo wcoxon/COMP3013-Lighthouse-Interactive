@@ -27,13 +27,13 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	Inventory = CreateDefaultSubobject<UPlayerInvComponent>(TEXT("Inventory"));
-	Mesh_HeldItem = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldItem"));
+	heldItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldMesh"));
 	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
-
+	
 	//Attach Components
 	SpringArm->SetupAttachment(CharacterCollider);
 	Camera->SetupAttachment(SpringArm,USpringArmComponent::SocketName);
-	Mesh_HeldItem->SetupAttachment(CharacterCollider);
+	heldItemMesh->SetupAttachment(CharacterCollider);
 	
 	//Spring Arm Settings
 	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, -30.0f, 30.0f), FRotator(-30.0f, 90.0f, 0.0f));
@@ -43,9 +43,9 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	SpringArm->bDoCollisionTest = false;
 
 	//HeldItemLocation
-	Mesh_HeldItem->SetRelativeLocationAndRotation(FVector(0, 0, 37), FRotator(0, 0, 90));
-	Mesh_HeldItem->SetRelativeScale3D(FVector(0.15f,0.15f,0.15f));
-	Mesh_HeldItem->CastShadow = false;
+	heldItemMesh->SetRelativeLocationAndRotation(FVector(0, 0, 37), FRotator(0, 0, 90));
+	heldItemMesh->SetRelativeScale3D(FVector(0.15f,0.15f,0.15f));
+	heldItemMesh->CastShadow = false;
 	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
@@ -65,6 +65,7 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	CharacterMovementComp->MaxAcceleration = 3000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 2.0f;
 	CharacterMovementComp->BrakingDecelerationWalking = 1000.0f;
+	direction = FVector::UpVector;
 
 	//Player Defaults
 	Suspicion = .0f;
@@ -75,12 +76,7 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	if (hudWidgetObj.Succeeded ()) HUDWidgetClass = hudWidgetObj.Class;
 	else HUDWidgetClass = nullptr;
 	
-	direction = FVector::UpVector;
-}
-
-void AGame_PaperCharacter::Destroy(UItem* Item)
-{
-	if (Item) Item->Destroy(this);
+	
 }
 
 void AGame_PaperCharacter::BeginPlay()
@@ -184,7 +180,7 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	default:
 		break;
 	}
-	//suspicionEvent.Broadcast();
+	
 	SusMeterChangeEvent.Broadcast();
 	
 	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
@@ -226,7 +222,7 @@ void AGame_PaperCharacter::SprintOff() {
 /** When player in item_base zone, place item in held_item */
 void AGame_PaperCharacter::Pickup()
 {
-	if (Current_HeldItem == nullptr)
+	if (heldItem == nullptr)
 	{
 		TArray<AActor*> Result;
 		GetOverlappingActors(Result, AItem_Base::StaticClass());
@@ -234,11 +230,9 @@ void AGame_PaperCharacter::Pickup()
 		{
 			if (UKismetSystemLibrary::DoesImplementInterface(Actor, UInteraction::StaticClass()))
 			{
-				Mesh_HeldItem->SetVisibility(true);
+				
 				AItem_Base* CurrentItem = Cast<AItem_Base>(Actor);
-				Current_HeldItem = CurrentItem->ItemToGive;
-				Mesh_HeldItem->SetStaticMesh(CurrentItem->ItemToGive->Mesh);
-				RefreshItemHUDEvent.Broadcast();
+				beginAction(grab,0.5f,FTimerDelegate::CreateUFunction(this,FName("grabItem"),CurrentItem->ItemToGive));
 				break;
 			}
 		}
@@ -263,27 +257,42 @@ void AGame_PaperCharacter::OpenInventory()
 //checks conditions to begin concealing
 void AGame_PaperCharacter::Conceal()
 {
-	if (Current_HeldItem != nullptr && Inventory->Capacity > Inventory->Items.Num())
+	if (heldItem != nullptr && Inventory->Capacity > Inventory->Items.Num())
 	{
 		beginAction(conceal,1.0f,FTimerDelegate::CreateUFunction(this,FName("concealItem")));
 	}
 }
 
-void AGame_PaperCharacter::concealItem()
+void AGame_PaperCharacter::grabItem(UItem* item)
 {
+	//function for the grab item action which puts an item object into held slot for npcs or player
 	endAction();
-	//clears the action progress UI now that action is complete
 	InteractionBarEvent.Broadcast();
 	
-	Inventory->AddItem(Current_HeldItem);
-	Current_HeldItem = nullptr;
+	heldItem = item;
+	RefreshItemHUDEvent.Broadcast();
+	
+	heldItemMesh->SetStaticMesh(item->Mesh);
+	heldItemMesh->SetVisibility(true);
+	
+}
+
+void AGame_PaperCharacter::concealItem()
+{
+	//clears the progress UI now that action is complete
+	endAction();
+	InteractionBarEvent.Broadcast();
+	
+	Inventory->AddItem(heldItem);
+	heldItem = nullptr;
 	RefreshItemHUDEvent.Broadcast();
 	
 	//broadcasts conceal event to npcs
 	//ConcealItemEvent.Broadcast();
 	
-	Mesh_HeldItem->SetVisibility(false);
+	heldItemMesh->SetVisibility(false);
 }
+
 
 /** Handles actions based on PlayerState */
 void AGame_PaperCharacter::StateManager(float deltatime) {
@@ -330,27 +339,6 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 		
 	}
 }*/
-/*
-void AGame_PaperCharacter::DetectionCheck(float DeltaTime) {
-	if (isSeen) return;
-	
-	switch (currentAction) {
-		case conceal:
-			SusMeter += DeltaTime;
-			SusMeterChangeEvent.Broadcast();
-			PostProcess->Settings.VignetteIntensity += DeltaTime / 8;
-			break;
-		case EEPlayerState::Running:
-			SusMeter += DeltaTime * 0.5f;
-			SusMeterChangeEvent.Broadcast();
-			PostProcess->Settings.VignetteIntensity += DeltaTime / 8;
-			break;
-	}
-	isSeen = true;
-
-}*/
-
-
 
 void AGame_PaperCharacter::OcclusionPass() const {
 	

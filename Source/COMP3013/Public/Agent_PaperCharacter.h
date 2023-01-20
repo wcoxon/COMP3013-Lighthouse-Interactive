@@ -27,32 +27,41 @@ class COMP3013_API AAgent_PaperCharacter : public APaperCharacter
 
 public:
 	AAgent_PaperCharacter();
+
+	//animation fields
 	UPROPERTY()
 	TMap<FString,UPaperFlipbook*> animations;
+	void setAnimationRateToSpeed(UPaperFlipbookComponent* flipbook, float speed,float animationDistance);
+	void setDirectionalAnimation(FVector animDirection,FString actionString);
+	
 	UPROPERTY()
 	FVector direction;
 	UPROPERTY()
 	float moveSpeed;
 	virtual void moveTowards(FVector destination,float distance);
-	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	UItem* heldItem;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	UStaticMeshComponent* heldItemMesh;
+
+	//action fields
+	ActionType currentAction;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Action")
+	FTimerHandle actionTimerHandle;
 	void beginAction(ActionType action, float duration, FTimerDelegate resultDelegate);
 	UFUNCTION()
 	void endAction();
 	
-	void setAnimationRateToSpeed(UPaperFlipbookComponent* flipbook, float speed,float animationDistance);
-	void setDirectionalAnimation(FVector animDirection,FString actionString);
 	UPROPERTY(VisibleAnywhere)
 	UAudioComponent* audioSource;
-	
-	ActionType currentAction;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Action")
-	FTimerHandle actionTimerHandle;
 	
 protected:
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void Tick(float deltaTime) override;
+	
 	UCharacterMovementComponent* CharacterMovementComp = GetCharacterMovement();
 	UPaperFlipbookComponent* CharacterFlipbook = GetSprite();
 	UCapsuleComponent* CharacterCollider = GetCapsuleComponent();

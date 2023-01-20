@@ -9,7 +9,7 @@
 AAgent_PaperCharacter::AAgent_PaperCharacter()
 {
 	CharacterCollider->SetCapsuleRadius(6.6f);
-	CharacterFlipbook->SetRenderCustomDepth(true);
+	//CharacterFlipbook->SetRenderCustomDepth(true);
 }
 
 void AAgent_PaperCharacter::beginAction(ActionType action, float duration, FTimerDelegate resultDelegate)
@@ -73,11 +73,6 @@ void AAgent_PaperCharacter::BeginPlay()
 	//CharacterCollider->SetCapsuleHalfHeight(6.6f);
 	//SetActorScale3D(FVector(10));
 	CharacterFlipbook->SetWorldRotation(FRotator(0.0f, 0.0f, 10.0f));
-}
-
-void grabItem(UItem* item)
-{
-	//function for the grab item action which puts an item object into held slot for npcs or player
 }
 
 void AAgent_PaperCharacter::Tick(float DeltaTime)

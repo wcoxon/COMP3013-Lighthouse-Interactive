@@ -17,7 +17,7 @@ ASecurityNPC::ASecurityNPC()
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
 	//Enable Render Buffer - Used for LOS colour
-	CharacterFlipbook->SetRenderCustomDepth(true);
+	//CharacterFlipbook->SetRenderCustomDepth(true);
 	
 	//setting up movement properties
 	moveSpeed = 900;

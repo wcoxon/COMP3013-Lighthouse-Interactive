@@ -15,8 +15,8 @@ bool UPlayerInvComponent::AddItem(UItem* Item)
 {
 	if (Items.Num() < Capacity && Item)
 	{
-		Item->World = GetWorld();
-		Item->Inventory = this;
+		//Item->World = GetWorld();
+		//Item->Inventory = this;
 		Items.Add(Item);
 		InventoryUpdate.Broadcast();
 		return true;
@@ -28,8 +28,8 @@ bool UPlayerInvComponent::RemoveItem(UItem* Item)
 {
 	if (Item)
 	{
-		Item->World = nullptr;
-		Item->Inventory = nullptr;
+		//Item->World = nullptr;
+		//Item->Inventory = nullptr;
 		Items.RemoveSingle(Item);
 		InventoryUpdate.Broadcast();
 		return true;
