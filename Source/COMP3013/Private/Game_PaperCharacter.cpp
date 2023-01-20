@@ -49,7 +49,10 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
+	CharacterFlipbook->SetCustomDepthStencilValue(100);
 	CharacterCollider->SetRenderCustomDepth(true);
+	CharacterCollider->SetCustomDepthStencilValue(100);
+	CharacterFlipbook->BoundsScale = 3.5f;
 	
 	//Collider Settings
 	CharacterCollider->SetCapsuleRadius(6.6f);
@@ -187,6 +190,9 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
 	//had an npc detect me since. i'll now know at the beginning of next tick if one of the npcs knocked this back to true
 	isSeen = false;
+
+	OcclusionPass();
+	endGamePass();
 }
 
 //UNREAL DEFAULT FUNCTION - Bind inputs to functions
@@ -337,4 +343,20 @@ void AGame_PaperCharacter::DetectionCheck(float DeltaTime) {
 			break;
 	}
 	isSeen = true;
+
 }*/
+
+
+
+void AGame_PaperCharacter::OcclusionPass() const {
+	
+	FVector playerLocation = GetActorLocation() + FVector(0.f,0.f,20.f);
+	FVector cameraLocation = Camera->GetComponentLocation();
+	FHitResult hitResult;
+	bool bHit = UKismetSystemLibrary::LineTraceSingle(this, playerLocation, cameraLocation, ETraceTypeQuery::TraceTypeQuery1, false, {}, EDrawDebugTrace::None, hitResult, true);
+	if (!bHit) {
+		PostProcess->Settings.WeightedBlendables.Array[2].Weight = 0;
+	} else {
+		PostProcess->Settings.WeightedBlendables.Array[2].Weight = 1;
+	}
+}
