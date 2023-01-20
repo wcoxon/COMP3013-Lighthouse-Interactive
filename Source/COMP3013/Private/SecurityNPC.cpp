@@ -45,16 +45,17 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 			player->moveSpeed = 0;
 			player->WalkSpeed = 0;
 			player->SprintOn();
-			
 		}
 		if(detectsActor(player))
 		{
 			pathToTarget(player->GetNavAgentLocation());
 		}
-		else if(tpath->PathPoints.Num()==1)
+		else
 		{
+			tpath->PathPoints.Add(player->GetNavAgentLocation()+player->direction*600.0f);
 			setState(search);
 		}
+		
 		break;
 	default:
 		break;
