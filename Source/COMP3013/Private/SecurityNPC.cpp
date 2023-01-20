@@ -20,11 +20,11 @@ ASecurityNPC::ASecurityNPC()
 	//CharacterFlipbook->SetRenderCustomDepth(true);
 	
 	//setting up movement properties
-	moveSpeed = 900;
+	moveSpeed = 800;
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
-	CharacterMovementComp->MaxAcceleration = 500.0f;
-	CharacterMovementComp->BrakingDecelerationWalking = moveSpeed/0.1f;
+	CharacterMovementComp->MaxAcceleration = 20*moveSpeed;
+	CharacterMovementComp->BrakingDecelerationWalking = 10*moveSpeed;
 }
 void ASecurityNPC::BeginPlay()
 {

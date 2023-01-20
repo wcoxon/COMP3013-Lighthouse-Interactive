@@ -114,6 +114,17 @@ void AGame_PaperCharacter::BeginPlay()
 	animations.Add(FString("idleDR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleDR64.PlayerIdleDR64"), NULL, LOAD_None, NULL));
 	animations.Add(FString("idleUR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/IdleAnimation/PlayerIdleUR64.PlayerIdleUR64"), NULL, LOAD_None, NULL));
 
+	animations.Add(FString("stealLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/StealAnimation/StealLeft.StealLeft"), NULL, LOAD_None, NULL));
+	animations.Add(FString("stealRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/StealAnimation/StealRight.StealRight"), NULL, LOAD_None, NULL));
+	animations.Add(FString("stealUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/StealAnimation/StealUp.StealUp"), NULL, LOAD_None, NULL));
+	animations.Add(FString("stealDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/StealAnimation/StealDown.StealDown"), NULL, LOAD_None, NULL));
+	
+	animations.Add(FString("stealDL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/StealAnimation/StealDL.StealDL"), NULL, LOAD_None, NULL));
+	animations.Add(FString("stealUL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/StealAnimation/StealUL.StealUL"), NULL, LOAD_None, NULL));
+	animations.Add(FString("stealDR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/StealAnimation/StealDR.StealDR"), NULL, LOAD_None, NULL));
+	animations.Add(FString("stealUR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/StealAnimation/StealUR.StealUR"), NULL, LOAD_None, NULL));
+	
+	
 	CharacterFlipbook->SetFlipbook(animations["idleUp"]);
 
 	PostProcess = Cast<APostProcessVolume>(UGameplayStatics::GetActorOfClass(GetWorld(), APostProcessVolume::StaticClass()));
@@ -140,7 +151,6 @@ void AGame_PaperCharacter::BeginPlay()
 
 void AGame_PaperCharacter::Tick(float DeltaTime)
 {
-	
 	Super::Tick(DeltaTime);
 	
 	if(inputVector.Length()>0)
@@ -156,8 +166,12 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 		//broadcast to update ui
 		InteractionBarEvent.Broadcast();
 	}
-	
-	StateManager(DeltaTime);
+	if(currentAction==grab)
+	{
+		setDirectionalAnimation(direction,"steal");
+		CharacterFlipbook->SetPlayRate(CharacterFlipbook->GetFlipbookLength()/0.5f);
+	}
+	else StateManager(DeltaTime);
 	
 	if(!isSeen) return;
 	

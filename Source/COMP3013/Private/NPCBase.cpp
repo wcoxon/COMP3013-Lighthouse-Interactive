@@ -40,7 +40,8 @@ ANPCBase::ANPCBase()
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 500.0f;
-	CharacterMovementComp->BrakingDecelerationWalking = moveSpeed/0.1f;
+	CharacterMovementComp->BrakingDecelerationWalking = 10*moveSpeed;
+	
 }
 
 void ANPCBase::setState(AIState state)
@@ -211,36 +212,30 @@ void ANPCBase::turnTowards(FVector destination, float deltaSec)
 
 void ANPCBase::moveTowards(FVector destination,float deltaSec)
 {
-	const float deltaDistance = deltaSec*CharacterMovementComp->Velocity.Length();
 	const FVector3d displacement = destination - GetNavAgentLocation();
-	
-	//if the target position will be reached in this frame, snap position to target
-	if(displacement.Length()<deltaDistance)
-	{
-		SetActorLocation(GetActorLocation()+ FVector3d(1,1,0)*displacement);
-		return;
-	}
+
 	//given the current speed and deceleration, the distance travelled if stopped
 	const float brakingDistance = 2*CharacterMovementComp->Velocity.SquaredLength()/CharacterMovementComp->BrakingDecelerationWalking;
 	
-	//if within braking distance of the target, brake
-	if(displacement.Length()<=brakingDistance)
+	//if approaching final point in path
+	if(tpath->PathPoints.Num()<=2)
 	{
-		return;
+		//if within braking distance of the target, brake
+		if(displacement.Length()<=brakingDistance)
+		{
+			return;
+		}
 	}
-
 	//if not looking at the target, turn to look at the target
 	if(!coneDirection.Equals(displacement.GetSafeNormal2D()))
 	{
 		direction = displacement.GetSafeNormal2D();
 		turnTowards(destination,deltaSec);
-		//setDirectionalAnimation(irection,"idle");
-		//return;
+		
 	}
 
 	//set sprite animation to walking in current direction
 	setDirectionalAnimation(direction,"walk");
-	
 	//alter the animation speed to reflect the velocity of the player
 	setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),300);
 	
@@ -251,7 +246,7 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 		audioSource->SetPitchMultiplier(FMath::FRandRange(1.1,1.2));
 		audioSource->Play();
 	}
-	
+
 	//move actor in direction
 	CharacterMovementComp->RequestPathMove(direction);
 }
@@ -264,15 +259,14 @@ void ANPCBase::pathToTarget(FVector destination)
 }
 void ANPCBase::followPath(float deltaSec)
 {
-	//move towards next point
-	moveTowards(tpath->PathPoints[1],deltaSec);
-	//if close to next, remove current
-	if(FVector2d::Distance(FVector2d(GetNavAgentLocation()),FVector2d(tpath->PathPoints[1]))<1)
-	{
-		tpath->PathPoints.RemoveAt(0);
-		setDirectionalAnimation(direction,"idle");
-		CharacterFlipbook->SetPlayRate(1);
-	}
+	float distanceToNextPathNode = FVector2d::Distance(FVector2d(GetNavAgentLocation()),FVector2d(tpath->PathPoints[1]));
+	
+	if(distanceToNextPathNode>deltaSec*moveSpeed) return moveTowards(tpath->PathPoints[1],deltaSec);
+	tpath->PathPoints.RemoveAt(0);
+	//if the target position will be reached in this frame, snap position to target
+	SetActorLocation(FVector(tpath->PathPoints[0].X,tpath->PathPoints[0].Y,GetActorLocation().Z));
+	setDirectionalAnimation(direction,"idle");
+	CharacterFlipbook->SetPlayRate(1);
 }
 
 void ANPCBase::Tick(float DeltaSeconds)

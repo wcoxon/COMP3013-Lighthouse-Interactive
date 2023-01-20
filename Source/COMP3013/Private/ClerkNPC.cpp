@@ -23,8 +23,8 @@ AClerkNPC::AClerkNPC()
 	moveSpeed = 300;
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
-	CharacterMovementComp->MaxAcceleration = 500.0f;
-	CharacterMovementComp->BrakingDecelerationWalking = moveSpeed*30;
+	CharacterMovementComp->MaxAcceleration = 20*moveSpeed;
+	CharacterMovementComp->BrakingDecelerationWalking = 10*moveSpeed;
 }
 void AClerkNPC::BeginPlay()
 {
@@ -48,9 +48,12 @@ void AClerkNPC::Tick(float DeltaSeconds)
 			setState(search);
 			break;
 		}
-		//if have path, break case
-		if(tpath->PathPoints.Num()>1) break;
-		//make path to security
+		
+		//if the destination is close to security and isn't reached, continue following
+		if(FVector::Distance(tpath->PathPoints.Last(),securityGuard->GetNavAgentLocation())<1500.f
+			&&tpath->PathPoints.Num()>1) break;
+		
+		//else make a new path to security
 		pathToTarget(securityGuard->GetNavAgentLocation());
 		break;
 		
