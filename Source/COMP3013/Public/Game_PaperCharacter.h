@@ -146,4 +146,6 @@ private:
 
 	void OcclusionPass() const;
 
+	void SusMeterChange(float DeltaTime);
+
 };

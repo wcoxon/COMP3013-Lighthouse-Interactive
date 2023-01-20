@@ -56,6 +56,13 @@ void ANPCBase::setState(AIState state)
 bool ANPCBase::detectsActor(AActor* actor)
 {
 
+	//check if player is within vision distance
+	if(FVector::Distance(player->GetActorLocation(),GetActorLocation())>coneRadius)
+	{
+		return false;
+	}
+	
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Player is within vision distance %f"), FVector::Distance(player->GetActorLocation(),GetActorLocation())));
 	//check if player is within vision cone
 	const FVector displacement = actor->GetActorLocation()-GetActorLocation();
 	if(abs(FMath::FindDeltaAngleRadians(displacement.HeadingAngle(),coneDirection.HeadingAngle()))>coneAngle)

@@ -158,36 +158,10 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	}
 	
 	StateManager(DeltaTime);
-	
-	if(!isSeen) return;
-	
-	switch(currentAction)
-	{
-	case conceal:
-		Suspicion = 100.0f;
-		break;
-				
-	default:
-		break;
-	}
-	
-	switch (currentState)
-	{
-	case Run:
-		Suspicion+= 10.0f*DeltaTime;
-		break;
-				
-	default:
-		break;
-	}
-	
-	SusMeterChangeEvent.Broadcast();
-	
-	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
-	//had an npc detect me since. i'll now know at the beginning of next tick if one of the npcs knocked this back to true
-	isSeen = false;
 
 	OcclusionPass();
+
+	SusMeterChange(DeltaTime);
 	//endGamePass();
 }
 
@@ -351,4 +325,34 @@ void AGame_PaperCharacter::OcclusionPass() const {
 	} else {
 		PostProcess->Settings.WeightedBlendables.Array[2].Weight = 1;
 	}
+}
+
+void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
+	if(!isSeen) return;
+	
+	switch(currentAction)
+	{
+	case conceal:
+		Suspicion = 100.0f;
+		break;
+				
+	default:
+		break;
+	}
+	
+	switch (currentState)
+	{
+	case Run:
+		Suspicion+= 10.0f*DeltaTime;
+		break;
+				
+	default:
+		break;
+	}
+	
+	SusMeterChangeEvent.Broadcast();
+	
+	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
+	//had an npc detect me since. i'll now know at the beginning of next tick if one of the npcs knocked this back to true
+	isSeen = false;
 }
