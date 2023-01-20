@@ -20,11 +20,11 @@ ASecurityNPC::ASecurityNPC()
 	//CharacterFlipbook->SetRenderCustomDepth(true);
 	
 	//setting up movement properties
-	moveSpeed = 900;
+	moveSpeed = 800;
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
-	CharacterMovementComp->MaxAcceleration = 500.0f;
-	CharacterMovementComp->BrakingDecelerationWalking = moveSpeed/0.1f;
+	CharacterMovementComp->MaxAcceleration = 20*moveSpeed;
+	CharacterMovementComp->BrakingDecelerationWalking = 10*moveSpeed;
 }
 void ASecurityNPC::BeginPlay()
 {
@@ -45,16 +45,17 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 			player->moveSpeed = 0;
 			player->WalkSpeed = 0;
 			player->SprintOn();
-			
 		}
 		if(detectsActor(player))
 		{
 			pathToTarget(player->GetNavAgentLocation());
 		}
-		else if(tpath->PathPoints.Num()==1)
+		else
 		{
+			tpath->PathPoints.Add(player->GetNavAgentLocation()+player->direction*600.0f);
 			setState(search);
 		}
+		
 		break;
 	default:
 		break;
