@@ -177,6 +177,7 @@ void ANPCBase::BeginPlay()
 	coneLight->SetLightFalloffExponent(0.25);
 	coneLight->SetIntensity(5);
 	coneLight->SetAttenuationRadius(coneRadius);
+	coneLight->SetRelativeLocation(FVector(0.0f, 4.25f, 34.0f));
 
 	//initialising random patrol pattern containing 3 points
 	int patrolCount = 2;

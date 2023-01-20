@@ -162,6 +162,11 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	OcclusionPass();
 
 	SusMeterChange(DeltaTime);
+
+	if (currentAction == conceal && currentState != Idle) {
+		endAction();
+		InteractionBarEvent.Broadcast();
+	}
 	//endGamePass();
 }
 
@@ -231,7 +236,7 @@ void AGame_PaperCharacter::OpenInventory()
 //checks conditions to begin concealing
 void AGame_PaperCharacter::Conceal()
 {
-	if (heldItem != nullptr && Inventory->Capacity > Inventory->Items.Num())
+	if (heldItem != nullptr && Inventory->Capacity > Inventory->Items.Num() && currentAction != conceal && currentState == Idle)
 	{
 		beginAction(conceal,1.0f,FTimerDelegate::CreateUFunction(this,FName("concealItem")));
 	}
@@ -333,7 +338,7 @@ void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	switch(currentAction)
 	{
 	case conceal:
-		Suspicion = 100.0f;
+		Suspicion += 25.0f*DeltaTime;
 		break;
 				
 	default:
