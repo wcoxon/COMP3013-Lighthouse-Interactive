@@ -27,13 +27,13 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	Inventory = CreateDefaultSubobject<UPlayerInvComponent>(TEXT("Inventory"));
-	Mesh_HeldItem = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldItem"));
+	heldItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldMesh"));
 	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
-
+	
 	//Attach Components
 	SpringArm->SetupAttachment(CharacterCollider);
 	Camera->SetupAttachment(SpringArm,USpringArmComponent::SocketName);
-	Mesh_HeldItem->SetupAttachment(CharacterCollider);
+	heldItemMesh->SetupAttachment(CharacterCollider);
 	
 	//Spring Arm Settings
 	SpringArm->SetRelativeLocationAndRotation(FVector(0.0f, -30.0f, 30.0f), FRotator(-30.0f, 90.0f, 0.0f));
@@ -43,9 +43,9 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	SpringArm->bDoCollisionTest = false;
 
 	//HeldItemLocation
-	Mesh_HeldItem->SetRelativeLocationAndRotation(FVector(0, 0, 37), FRotator(0, 0, 90));
-	Mesh_HeldItem->SetRelativeScale3D(FVector(0.15f,0.15f,0.15f));
-	Mesh_HeldItem->CastShadow = false;
+	heldItemMesh->SetRelativeLocationAndRotation(FVector(0, 0, 37), FRotator(0, 0, 90));
+	heldItemMesh->SetRelativeScale3D(FVector(0.15f,0.15f,0.15f));
+	heldItemMesh->CastShadow = false;
 	
 	//Enable Render Buffer - Used for LOS colour
 	CharacterFlipbook->SetRenderCustomDepth(true);
@@ -62,14 +62,13 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	WalkSpeed=500.0f;
 	CharacterMovementComp->MovementMode=MOVE_Walking;
 	CharacterMovementComp->MaxWalkSpeed = WalkSpeed;
-	CharacterMovementComp->MaxAcceleration = 8000.0f;
+	CharacterMovementComp->MaxAcceleration = 3000.0f;
 	CharacterMovementComp->BrakingFrictionFactor = 2.0f;
-	CharacterMovementComp->BrakingDecelerationWalking = 1200.0f;
+	CharacterMovementComp->BrakingDecelerationWalking = 1000.0f;
+	direction = FVector::UpVector;
 
 	//Player Defaults
-	SusMeter = 0.0f;
-	TimeConcealing = 0.0f;
-	TimeToConceal = 3.0f;
+	Suspicion = .0f;
 	isSeen = false;
 	
 	//Assign HUD element
@@ -77,12 +76,7 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	if (hudWidgetObj.Succeeded ()) HUDWidgetClass = hudWidgetObj.Class;
 	else HUDWidgetClass = nullptr;
 	
-	direction = FVector::UpVector;
-}
-
-void AGame_PaperCharacter::Destroy(UItem* Item)
-{
-	if (Item) Item->Destroy(this);
+	
 }
 
 void AGame_PaperCharacter::BeginPlay()
@@ -138,6 +132,9 @@ void AGame_PaperCharacter::BeginPlay()
 	SetActorScale3D(FVector(actorScale/spriteRes));
 
 	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
+
+	isSeen=false;
+
 }
 
 
@@ -145,27 +142,32 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 {
 	
 	Super::Tick(DeltaTime);
-
-	//Defaults
-	isSeen = false;
-	mPreviousState = mPlayerState;
+	
 	if(inputVector.Length()>0)
 	{
 		this->AddMovementInput(inputVector.GetSafeNormal2D());
 		direction=CharacterMovementComp->Velocity.GetSafeNormal2D();
 	}
-	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.9) mPlayerState = EEPlayerState::Running;
-	else if(CharacterMovementComp->Velocity.Length() > 0) mPlayerState = EEPlayerState::Walking;
-	if(CharacterMovementComp->Velocity.Length() == 0 && mPlayerState != EEPlayerState::Concealing) mPlayerState = EEPlayerState::Idle;
-
-
-	if (mPreviousState != mPlayerState && mPreviousState == EEPlayerState::Concealing) {
-		TimeConcealing = 0;
+	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.8) currentState = Run;
+	else if(CharacterMovementComp->Velocity.Length() > 0) currentState = Walk;
+	else currentState = Idle;
+	
+	if (currentAction!=nullAction) {
+		//broadcast to update ui
 		InteractionBarEvent.Broadcast();
 	}
+	
 	StateManager(DeltaTime);
+
 	OcclusionPass();
-	endGamePass();
+
+	SusMeterChange(DeltaTime);
+
+	if (currentAction == conceal && currentState != Idle) {
+		endAction();
+		InteractionBarEvent.Broadcast();
+	}
+	//endGamePass();
 }
 
 //UNREAL DEFAULT FUNCTION - Bind inputs to functions
@@ -183,26 +185,15 @@ void AGame_PaperCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 }
 
 //Player movement functions for XY
-void AGame_PaperCharacter::Move_XAxis(float AxisValue)
-{
-	if (AxisValue) PlayerDirection = Direction::MovingRight;
-	if (AxisValue == -1) PlayerDirection = Direction::MovingLeft;
-	
+void AGame_PaperCharacter::Move_XAxis(float AxisValue){
 	inputVector.X = AxisValue;
 }
-
-void AGame_PaperCharacter::Move_YAxis(float AxisValue)
-{
-	if (AxisValue) PlayerDirection = Direction::MovingUp;
-	if (AxisValue == -1) PlayerDirection = Direction::MovingDown;
-	
+void AGame_PaperCharacter::Move_YAxis(float AxisValue){
 	inputVector.Y = AxisValue;
 }
-
 void AGame_PaperCharacter::SprintOn() {
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 }
-
 void AGame_PaperCharacter::SprintOff() {
 	CharacterMovementComp->MaxWalkSpeed = WalkSpeed;
 }
@@ -210,7 +201,7 @@ void AGame_PaperCharacter::SprintOff() {
 /** When player in item_base zone, place item in held_item */
 void AGame_PaperCharacter::Pickup()
 {
-	if (Current_HeldItem == nullptr)
+	if (heldItem == nullptr)
 	{
 		TArray<AActor*> Result;
 		GetOverlappingActors(Result, AItem_Base::StaticClass());
@@ -218,11 +209,9 @@ void AGame_PaperCharacter::Pickup()
 		{
 			if (UKismetSystemLibrary::DoesImplementInterface(Actor, UInteraction::StaticClass()))
 			{
-				Mesh_HeldItem->SetVisibility(true);
+				
 				AItem_Base* CurrentItem = Cast<AItem_Base>(Actor);
-				Current_HeldItem = CurrentItem->ItemToGive;
-				Mesh_HeldItem->SetStaticMesh(CurrentItem->ItemToGive->Mesh);
-				RefreshItemHUDEvent.Broadcast();
+				beginAction(grab,0.5f,FTimerDelegate::CreateUFunction(this,FName("grabItem"),CurrentItem->ItemToGive));
 				break;
 			}
 		}
@@ -244,24 +233,56 @@ void AGame_PaperCharacter::OpenInventory()
 }
 
 /** Player placing item in their inventory */
+//checks conditions to begin concealing
 void AGame_PaperCharacter::Conceal()
 {
-	if (Current_HeldItem != nullptr && Inventory->Capacity > Inventory->Items.Num() && mPlayerState != EEPlayerState::Concealing)
+	if (heldItem != nullptr && Inventory->Capacity > Inventory->Items.Num() && currentAction != conceal && currentState == Idle)
 	{
-		mPlayerState = EEPlayerState::Concealing;
+		beginAction(conceal,1.0f,FTimerDelegate::CreateUFunction(this,FName("concealItem")));
 	}
 }
+
+void AGame_PaperCharacter::grabItem(UItem* item)
+{
+	//function for the grab item action which puts an item object into held slot for npcs or player
+	endAction();
+	InteractionBarEvent.Broadcast();
+	
+	heldItem = item;
+	RefreshItemHUDEvent.Broadcast();
+	
+	heldItemMesh->SetStaticMesh(item->Mesh);
+	heldItemMesh->SetVisibility(true);
+	
+}
+
+void AGame_PaperCharacter::concealItem()
+{
+	//clears the progress UI now that action is complete
+	endAction();
+	InteractionBarEvent.Broadcast();
+	
+	Inventory->AddItem(heldItem);
+	heldItem = nullptr;
+	RefreshItemHUDEvent.Broadcast();
+	
+	//broadcasts conceal event to npcs
+	//ConcealItemEvent.Broadcast();
+	
+	heldItemMesh->SetVisibility(false);
+}
+
 
 /** Handles actions based on PlayerState */
 void AGame_PaperCharacter::StateManager(float deltatime) {
 
 	float animationProgress;
-	switch (mPlayerState) {
-	case EEPlayerState::Idle:
+	switch (currentState) {
+	case Idle:
 		setDirectionalAnimation(direction,"idle");
 		CharacterFlipbook->SetPlayRate(1);
 		break;
-	case EEPlayerState::Walking:
+	case Walk:
 		animationProgress = CharacterFlipbook->GetPlaybackPosition();
 		setDirectionalAnimation(direction,"walk");
 		setAnimationRateToSpeed(CharacterFlipbook,CharacterMovementComp->Velocity.Length(),300);
@@ -273,7 +294,7 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 			audioSource->Play();
 		}
 		break;
-	case EEPlayerState::Running:
+	case Run:
 		animationProgress = CharacterFlipbook->GetPlaybackPosition();
 		setDirectionalAnimation(direction,"run");
 		CharacterFlipbook->SetPlaybackPosition(animationProgress,false);
@@ -285,49 +306,18 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 			audioSource->Play();
 		}
 		break;
-	case EEPlayerState::Concealing:
-		TimeConcealing += deltatime;
-		InteractionBarEvent.Broadcast();
-		if (TimeConcealing >= TimeToConceal) {
-			TimeConcealing = 0;
-			mPlayerState = EEPlayerState::Idle;
-			Inventory->AddItem(Current_HeldItem);
-			Current_HeldItem = nullptr;
-			ConcealItemEvent.Broadcast();
-			RefreshItemHUDEvent.Broadcast();
-			InteractionBarEvent.Broadcast();
-			Mesh_HeldItem->SetVisibility(false);
-		}
-		break;
+	
 	}
 	
 		
 }
 
-void AGame_PaperCharacter::endGamePass() {
-	if (SusMeter >= SusMeterMax && mEndGame == false) {
-		mEndGame = true;
-		PostProcess->Settings.VignetteIntensity += 0.10f;
+/*void AGame_PaperCharacter::endGamePass() {
+	if (Suspicion >= 100.0f) {
+		//PostProcess->Settings.VignetteIntensity += 0.10f;
+		
 	}
-}
-
-void AGame_PaperCharacter::DetectionCheck(float DeltaTime) {
-	if (isSeen) return;
-	
-	switch (mPlayerState) {
-		case EEPlayerState::Concealing:
-			SusMeter += DeltaTime;
-			SusMeterChangeEvent.Broadcast();
-			PostProcess->Settings.VignetteIntensity += DeltaTime / 8;
-			break;
-		case EEPlayerState::Running:
-			SusMeter += DeltaTime * 0.5f;
-			SusMeterChangeEvent.Broadcast();
-			PostProcess->Settings.VignetteIntensity += DeltaTime / 8;
-			break;
-	}
-	isSeen = true;
-}
+}*/
 
 void AGame_PaperCharacter::OcclusionPass() const {
 	
@@ -340,4 +330,34 @@ void AGame_PaperCharacter::OcclusionPass() const {
 	} else {
 		PostProcess->Settings.WeightedBlendables.Array[2].Weight = 1;
 	}
+}
+
+void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
+	if(!isSeen) return;
+	
+	switch(currentAction)
+	{
+	case conceal:
+		Suspicion += 25.0f*DeltaTime;
+		break;
+				
+	default:
+		break;
+	}
+	
+	switch (currentState)
+	{
+	case Run:
+		Suspicion+= 10.0f*DeltaTime;
+		break;
+				
+	default:
+		break;
+	}
+	
+	SusMeterChangeEvent.Broadcast();
+	
+	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
+	//had an npc detect me since. i'll now know at the beginning of next tick if one of the npcs knocked this back to true
+	isSeen = false;
 }

@@ -33,12 +33,16 @@ enum class Direction : uint8 {
 };
 
 UENUM(BlueprintType)
-enum class EEPlayerState : uint8 {
+enum MovementState{
 	Idle       UMETA(DisplayName="Idle"),
-	Walking        UMETA(DisplayName="Walking"),
-	Running        UMETA(DisplayName="Running"),
-	Concealing        UMETA(DisplayName="Concealing"),
+	Walk        UMETA(DisplayName="Walking"),
+	Run        UMETA(DisplayName="Running"),
 };
+
+/*DECLARE_DYNAMIC_MULTICAST_DELEGATE(FConcealItem);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRefreshItemHUD);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractionBar);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSuspicionMeterChange);*/
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FConcealItem);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRefreshItemHUD);
@@ -70,8 +74,8 @@ public:
 	class UPlayerInvComponent* Inventory;
 
 	//HeldItemMesh
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* Mesh_HeldItem;
+	//UPROPERTY(VisibleAnywhere)
+	//UStaticMeshComponent* Mesh_HeldItem;
 
 	//Postproceser
 	UPROPERTY(VisibleAnywhere)
@@ -89,72 +93,48 @@ public:
 	void SprintOff();
 	void Pickup();
 	void OpenInventory();
+	//method to bind to conceal button
 	void Conceal();
 	FVector inputVector;
 	bool PlayerStateChange = false;
 
+	//method for actually concealing the item
+	UFUNCTION()
+	void concealItem();
+	UFUNCTION()
+	void grabItem(UItem* item);
+
+	MovementState currentState;
+	
 	//Direct asset reference -> Inventory HUD widget
 	class UClass* HUDWidgetClass;
 	class UUserWidget* HUDWidgetMain;
-
-	//Direction Enum
-	UPROPERTY(VisibleAnywhere, Category = "Enums")
-	Direction PlayerDirection = Direction::Down;
-
-	//Player State Enum
-	UPROPERTY(VisibleAnywhere, Category = "Enums")
-	EEPlayerState mPlayerState = EEPlayerState::Idle;
-	UPROPERTY(VisibleAnywhere, Category = "Enums")
-	EEPlayerState mPreviousState = EEPlayerState::Idle;
-
 	
-	//PLAYER VARS
-	UPROPERTY(VisibleAnywhere, Category = "Stats")
-	FString P_HeldItem = "";
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-	UItem* Current_HeldItem;
-	
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void Destroy(UItem* Item);
-
-	UPROPERTY(BlueprintAssignable)
-	FRefreshItemHUD RefreshItemHUDEvent;
+	//UFUNCTION(BlueprintCallable, Category = "Inventory")
+	//void Destroy(UItem* Item);
 
 	float WalkSpeed;
 	
-
-	//Suspiscison meter
+	//Suspicion meter
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
-	float SusMeter;
+	float Suspicion= .0f;
+
+	UPROPERTY(BlueprintAssignable)
+	FRefreshItemHUD RefreshItemHUDEvent;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sussy")
-	float SusMeterMax = 2.0f;
-
 	UPROPERTY(BlueprintAssignable, Category = "Sussy")
 	FSusMeterChange SusMeterChangeEvent;
 	
-	UPROPERTY(VisibleAnywhere, Category = "Sussy")
-	bool mEndGame = false;
-	
-	UFUNCTION(BlueprintCallable, Category = "Sussy")
-	void endGamePass();
-	
-	//Concealing Data
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Concealing")
-	float TimeConcealing;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Concealing")
-	float TimeToConceal = 3.0f;
-
-	UPROPERTY(BlueprintAssignable)
-	FConcealItem ConcealItemEvent;
-
 	UPROPERTY(BlueprintAssignable)
 	FInteractionBar InteractionBarEvent;
+	//FInteractionBar actionProgressEvent;
 
-	UFUNCTION(BlueprintCallable, Category = "Detection")
-	void DetectionCheck(float DeltaTime);
+	//UPROPERTY(BlueprintAssignable)
+	//FSuspicionMeterChange suspicionEvent;
+	
+	//represents whether the player was seen since the last tick
+	
+	bool isSeen = false;
 	
 protected:
 	
@@ -165,8 +145,7 @@ private:
 	void StateManager(float deltatime);
 
 	void OcclusionPass() const;
-	
-	//Player Seen Data
-	bool isSeen;
+
+	void SusMeterChange(float DeltaTime);
 
 };

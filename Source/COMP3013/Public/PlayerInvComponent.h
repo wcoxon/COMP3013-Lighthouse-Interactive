@@ -21,8 +21,8 @@ public:
 	bool AddItem(UItem* Item);
 	bool RemoveItem(UItem* Item);
 
-	UPROPERTY(EditDefaultsOnly, Instanced)
-	TArray<UItem*> BaseItems;
+	//UPROPERTY(EditDefaultsOnly, Instanced)
+	//TArray<UItem*> BaseItems;
 	
 	UPROPERTY(EditDefaultsOnly)
 	int Capacity;

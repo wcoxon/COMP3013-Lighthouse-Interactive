@@ -8,19 +8,24 @@
 #include "PaperCharacter.h"
 #include "NavigationSystem.h"
 #include "Components/SpotLightComponent.h"
+#include "Containers/Array.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "NavigationPath.h"
+#include "Kismet/GameplayStatics.h"
 #include "NPCBase.generated.h"
 
 /**
  * 
  */
-
+UENUM()
 enum AIState
 {
 	patrol,
 	idle,
-	alerted,
-	searching
-	
+	pursue,
+	search,
+	stare,
+	tattle
 };
 
 UCLASS()
@@ -30,10 +35,19 @@ class COMP3013_API ANPCBase : public AAgent_PaperCharacter
 
 public:
 	ANPCBase();
-	virtual void Tick(float DeltaSeconds) override;
-	bool detectsPlayer();
+	
+	TArray<AActor*> getVisibleActors(UClass* Type);
+	bool detectsActor(AActor* actor);
+	
 	void moveTowards(FVector destination,float deltaSec) override;
 	void turnTowards(FVector destination,float deltaSec);
+	void followPath(float deltaSec);
+	UFUNCTION()
+	void pathToTarget(FVector destination);
+	
+	UFUNCTION()
+	void setState(AIState state);
+	
 	UFUNCTION()
 	void playerPickup();
 	UPROPERTY(EditAnywhere)
@@ -42,19 +56,19 @@ protected:
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-private:
+	virtual void Tick(float DeltaSeconds) override;
 	float turnSpeed;
 	float coneRadius;
 	float coneAngle;
+	
 	AIState currentState;
 	TArray<FVector> patrolPoints;
-	float waitCounter;
-
-	
 	UPROPERTY(VisibleAnywhere)
 	USpotLightComponent* coneLight;
 	UPROPERTY()
 	AGame_PaperCharacter* player;
 	UPROPERTY()
 	UNavigationPath *tpath;
+	
+	
 };
