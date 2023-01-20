@@ -192,7 +192,7 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	isSeen = false;
 
 	OcclusionPass();
-	endGamePass();
+	//endGamePass();
 }
 
 //UNREAL DEFAULT FUNCTION - Bind inputs to functions
