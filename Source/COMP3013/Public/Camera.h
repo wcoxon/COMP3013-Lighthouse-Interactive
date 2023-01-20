@@ -18,7 +18,7 @@ enum class EECameraState : uint8
 };
 
 UCLASS()
-class COMP3013_API ACamera : public AActor
+class COMP3013_API ACamera : public ACharacter
 {
 	GENERATED_BODY()
 	

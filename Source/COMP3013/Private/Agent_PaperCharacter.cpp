@@ -9,9 +9,30 @@
 AAgent_PaperCharacter::AAgent_PaperCharacter()
 {
 	CharacterCollider->SetCapsuleRadius(6.6f);
-	CharacterFlipbook->SetRenderCustomDepth(true);
-	//CharacterFlipbook->BoundsScale = 10.0f;
+	//CharacterFlipbook->SetRenderCustomDepth(true);
 }
+
+void AAgent_PaperCharacter::beginAction(ActionType action, float duration, FTimerDelegate resultDelegate)
+{
+	//this is cool too because if we wanna we can make functions to call at the end of these timers,
+	//like picking up or concealing performing the action at the end of the timer
+	currentAction = action;
+	
+	GetWorldTimerManager().SetTimer(
+		actionTimerHandle,
+		resultDelegate,
+		duration,
+		false,
+		duration
+		);
+	
+}
+void AAgent_PaperCharacter::endAction()
+{
+	currentAction=nullAction;
+	GetWorldTimerManager().ClearTimer(actionTimerHandle);
+}
+
 void AAgent_PaperCharacter::setAnimationRateToSpeed(UPaperFlipbookComponent* flipbook, float speed,float animationDistance)
 {
 	float animationTime = flipbook->GetFlipbookLength();
@@ -27,39 +48,16 @@ void AAgent_PaperCharacter::setDirectionalAnimation(FVector animDirection, FStri
 {
 	FString directionString;
 
-	float angle = FMath::RadiansToDegrees(animDirection.HeadingAngle());
+	float angle = FMath::RadiansToDegrees(animDirection.HeadingAngle())+180;
+	std::vector<FString> directionStrings = {"Left","DL","Down","DR","Right","UR","Up","UL"};
 
-	if(angle>-135-45/2.0f && angle<-135+45/2.0f)
+	for(int x = 0; x<8;x++)
 	{
-		directionString="DL";
-	}
-	if(angle>-90-45/2.0f && angle<-90+45/2.0f)
-	{
-		directionString="Down";
-	}
-	if(angle>-45-45/2.0f && angle<-45/2.0f)
-	{
-		directionString="DR";
-	}
-	if(angle>-45/2.0f && angle<45.0f-45/2.0f)
-	{
-		directionString="Right";
-	}
-	if(angle>45.0f-45/2.0f && angle<45.0f+45/2.0f)
-	{
-		directionString="UR";
-	}
-	if(angle>90.0f-45/2.0f && angle<90.0f+45/2.0f)
-	{
-		directionString="Up";
-	}
-	if(angle>135.0f-45/2.0f && angle<135.0f+45/2.0f)
-	{
-		directionString="UL";
-	}
-	if(angle>180-45/2.0f || angle<-180+45/2.0f)
-	{
-		directionString="Left";
+		if(abs(FMath::FindDeltaAngleDegrees(angle,x*45))<45.0f/2.0f)
+		{
+			directionString=directionStrings[x];
+			break;
+		}
 	}
 	
 	if(animations.Find(actionString+directionString)!=nullptr)
@@ -75,6 +73,14 @@ void AAgent_PaperCharacter::BeginPlay()
 	//CharacterCollider->SetCapsuleHalfHeight(6.6f);
 	//SetActorScale3D(FVector(10));
 	CharacterFlipbook->SetWorldRotation(FRotator(0.0f, 0.0f, 10.0f));
+}
+
+void AAgent_PaperCharacter::Tick(float DeltaTime)
+{
+	if(currentAction!=nullAction && GetWorldTimerManager().GetTimerElapsed(actionTimerHandle)==-1.0f)
+	{
+		endAction();
+	}
 }
 
 void AAgent_PaperCharacter::moveTowards(FVector destination, float distance)

@@ -5,7 +5,6 @@
 
 #include <valarray>
 #include "PaperFlipbookComponent.h"
-#include "NavigationPath.h"
 #include "Components/AudioComponent.h"
 #include "PaperFlipbook.h"
 #include "VectorTypes.h"
@@ -34,34 +33,39 @@ ANPCBase::ANPCBase()
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
 	//Enable Render Buffer - Used for LOS colour
-	CharacterFlipbook->SetRenderCustomDepth(true);
+	CharacterFlipbook->SetRenderCustomDepth(false);
 	
 	//setting up movement properties
-	moveSpeed = 500;
+	moveSpeed = 300;
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 500.0f;
 	CharacterMovementComp->BrakingDecelerationWalking = moveSpeed/0.1f;
 }
 
-bool ANPCBase::detectsPlayer()
+void ANPCBase::setState(AIState state)
 {
-	//check if player is within vision distance
-	if(FVector::Distance(player->GetActorLocation(),GetActorLocation())>coneRadius)
-	{
-		return false;
-	}
+	if(currentState==state) return;
+	//interrupt any actions
+	endAction();
+	//set state to argument
+	currentState = state;
+	UE_LOG(LogTemp, Log, TEXT("%i %f"), state,GetWorldTimerManager().GetTimerElapsed(actionTimerHandle));
+}
+
+bool ANPCBase::detectsActor(AActor* actor)
+{
 
 	//check if player is within vision cone
-	const FVector playerDisplacement = player->GetActorLocation()-GetActorLocation();
-	if(abs(FMath::FindDeltaAngleRadians(playerDisplacement.HeadingAngle(),coneDirection.HeadingAngle()))>coneAngle)
+	const FVector displacement = actor->GetActorLocation()-GetActorLocation();
+	if(abs(FMath::FindDeltaAngleRadians(displacement.HeadingAngle(),coneDirection.HeadingAngle()))>coneAngle)
 	{
 		return false;
 	}
 
 	//check for obstacles using raycast
 	FHitResult hit;
-	const bool actorHit = GetWorld()->LineTraceSingleByChannel(hit,GetActorLocation(),player->GetActorLocation(),ECC_Visibility,FCollisionQueryParams(),FCollisionResponseParams());
+	const bool actorHit = GetWorld()->LineTraceSingleByChannel(hit,GetActorLocation(),actor->GetActorLocation(),ECC_Visibility,FCollisionQueryParams(),FCollisionResponseParams());
 	if(actorHit && hit.GetActor())
 	{
 		return false;
@@ -70,11 +74,36 @@ bool ANPCBase::detectsPlayer()
 	return true;
 }
 
+TArray<AActor*> ANPCBase::getVisibleActors(UClass* Type)
+{
+	TArray<AActor*> actorsInRange;
+	UKismetSystemLibrary::SphereOverlapActors(
+		GetWorld(),
+		GetActorLocation(),
+		coneRadius,
+		{},
+		Type,
+		{},
+		actorsInRange);
+	
+	TArray<AActor*> LOSActorsInRange;
+	for(AActor* a : actorsInRange)
+	{
+		//UE_LOG(LogTemp, Log, TEXT("OverlappedActor: %s"), *a->GetName());
+		if(!detectsActor(a))
+		{
+			actorsInRange.Remove(a);
+		}
+	}
+	return actorsInRange;
+	
+}
+
 void ANPCBase::playerPickup()
 {
-	if(detectsPlayer())
+	if(detectsActor(player))
 	{
-		currentState = alerted;
+		currentState = pursue;
 	}
 }
 
@@ -104,6 +133,7 @@ void ANPCBase::BeginPlay()
 
 	CharacterFlipbook->SetFlipbook(animations["idleRight"]);
 	
+	CharacterFlipbook->SetRenderCustomDepth(false);
 	//base height of the sprite i.e. how many pixels tall it is since pixels per unit is 1
 	float spriteHeight = 64.0;
 	//offset from the bottom of the sprite to the feet of the character
@@ -127,7 +157,8 @@ void ANPCBase::BeginPlay()
 	
 	//finding player pawn and binding pickup delegate
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
-	player->ConcealItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerPickup,TEXT("playerPickup"));
+	
+	//player->ConcealItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerPickup,TEXT("playerPickup"));
 
 	//initialising nav path
 	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
@@ -141,18 +172,14 @@ void ANPCBase::BeginPlay()
 	coneLight->SetAttenuationRadius(coneRadius);
 
 	//initialising random patrol pattern containing 3 points
-	int patrolCount = 3;
+	int patrolCount = 2;
 	for(int x=0;x<patrolCount;x++)
 	{
-		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),1000));
+		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),2000));
 	}
 	
 	//set initial AI state to patrolling
 	currentState=patrol;
-	
-	//counter used to handle pauses in the NPC's behaviour
-	waitCounter=0;
-	
 }
 
 void ANPCBase::turnTowards(FVector destination, float deltaSec)
@@ -207,6 +234,8 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 	{
 		direction = displacement.GetSafeNormal2D();
 		turnTowards(destination,deltaSec);
+		//setDirectionalAnimation(irection,"idle");
+		//return;
 	}
 
 	//set sprite animation to walking in current direction
@@ -227,6 +256,25 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 	CharacterMovementComp->RequestPathMove(direction);
 }
 
+void ANPCBase::pathToTarget(FVector destination)
+{
+	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),destination);
+	endAction();
+}
+void ANPCBase::followPath(float deltaSec)
+{
+	//move towards next point
+	moveTowards(tpath->PathPoints[1],deltaSec);
+	//if close to next, remove current
+	if(FVector2d::Distance(FVector2d(GetNavAgentLocation()),FVector2d(tpath->PathPoints[1]))<1)
+	{
+		tpath->PathPoints.RemoveAt(0);
+		setDirectionalAnimation(direction,"idle");
+		CharacterFlipbook->SetPlayRate(1);
+	}
+}
+
 void ANPCBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -234,97 +282,61 @@ void ANPCBase::Tick(float DeltaSeconds)
 	switch(currentState)
 	{
 	case patrol:
-		if(waitCounter<5)
-		{
-			waitCounter+=DeltaSeconds;
-			break;
-		}
-		waitCounter=0;
+		//for each point in patrol route
 		for(int patrolIndex = 0; patrolIndex<patrolPoints.Num();patrolIndex++)
 		{
-			if(tpath->PathPoints.Last().Equals(patrolPoints[patrolIndex]))
+			//if current destination isn't this patrol point, continue to next
+			if(!tpath->PathPoints.Last().Equals(patrolPoints[patrolIndex])) continue;
+			
+			//if destination point isn't reached, return to continue along it
+			if(tpath->PathPoints.Num()>1) return;
+			
+			//if point is last element in patrol route
+			if(patrolIndex==patrolPoints.Num()-1)
 			{
-				if(patrolPoints.Num()-1==patrolIndex)
-				{
-					Algo::Reverse(patrolPoints);
-					patrolIndex=-1;
-				}
-				if(tpath->PathPoints.Num()==1)
-				{
-					UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
-					tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),patrolPoints[patrolIndex+1]);
-				}
-				break;
-			}
-			else if(patrolIndex==patrolPoints.Num()-1)
-			{
-				UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
-				tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),patrolPoints[0]);
+				//reverse the patrol route
+				Algo::Reverse(patrolPoints);
+				patrolIndex=0;
 			}
 			
+			//wait 3 seconds to make path to next patrol point
+			if(currentAction!=wait) beginAction(wait,3.0f,FTimerDelegate::CreateUFunction( this,FName("pathToTarget"),patrolPoints[patrolIndex+1]));
+
+			return;
+			
+			
+			
 		}
+		//if current path destination didn't match any patrol points, path to first patrol point
+		pathToTarget(patrolPoints[0]);
 		break;
 		
-	case alerted:
-		if(detectsPlayer())
-		{
-			UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
-			tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),player->GetNavAgentLocation());
-		}
-		else if(tpath->PathPoints.Num()==1)
-		{
-			currentState=searching;
-			waitCounter=0;
-		}
+	case search:
+		//if our path has a next point, break case
+		if(tpath->PathPoints.Num()>1) break;
+		//wait 1 second before making path to random nearby position
+		if(currentAction!=wait) beginAction(wait,1.0f,FTimerDelegate::CreateUFunction( this,FName("pathToTarget"),UNavigationSystemV1::GetCurrent(GetWorld())->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),1000)));
+		
 		break;
 		
-	case searching:
-		if(detectsPlayer())
-		{
-			currentState=alerted;
-		}
-		else if(tpath->PathPoints.Num()==1 && fmod(waitCounter,1)+DeltaSeconds>1)
-		{
-			UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
-			tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),500));
-		}
-		else if(waitCounter>15)
-		{
-			waitCounter=0;
-			currentState=patrol;
-			break;
-		}
-		waitCounter+=DeltaSeconds;
+	case stare:
+		//after 2 seconds continue patrolling
+		if(currentAction!=wait) beginAction(wait,2.0f,FTimerDelegate::CreateUFunction( this,FName("setState"),patrol));
+
+		//if npc can't see player then break case
+		if(!detectsActor(player)) break;
+
+		//turn to stare at player
+		turnTowards(player->GetNavAgentLocation(),DeltaSeconds);
+		
+		//if the player acts cringe reset timer by starting wait over
+		if(player->currentState==Run) GetWorldTimerManager().ClearTimer(actionTimerHandle);
 		break;
 		
-		default:
-			break;
-	}
-	
-	if(detectsPlayer())
-	{
-		player->DetectionCheck(DeltaSeconds);
-		if(currentState==alerted)
-		{
-			coneLight->SetLightColor(FLinearColor(1,0.0,0.0));
-		}
-		else coneLight->SetLightColor(FLinearColor(1,1.0,0.0));
-	}
-	else
-	{
-		if(currentState==searching) coneLight->SetLightColor(FLinearColor(1,0.0,1.0));
-		else coneLight->SetLightColor(FLinearColor(1,1,1));
-	}
-	if(tpath->PathPoints.Num()>1)
-	{
-		moveTowards(tpath->PathPoints[1],DeltaSeconds);
-		if(FVector2d::Distance(FVector2d(GetNavAgentLocation()),FVector2d(tpath->PathPoints[1]))<1)
-		{
-			tpath->PathPoints.RemoveAt(0);
-			setDirectionalAnimation(direction,"idle");
-			CharacterFlipbook->SetPlayRate(1);
-		}
+	default:
+		break;
 	}
 }
+
 
 
