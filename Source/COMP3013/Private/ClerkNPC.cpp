@@ -24,7 +24,7 @@ AClerkNPC::AClerkNPC()
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 500.0f;
-	CharacterMovementComp->BrakingDecelerationWalking = moveSpeed/0.1f;
+	CharacterMovementComp->BrakingDecelerationWalking = moveSpeed*30;
 }
 void AClerkNPC::BeginPlay()
 {
