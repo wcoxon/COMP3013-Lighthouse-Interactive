@@ -93,9 +93,14 @@ public:
 	void SprintOff();
 	void Pickup();
 	void OpenInventory();
+	//method to bind to conceal button
 	void Conceal();
 	FVector inputVector;
 	bool PlayerStateChange = false;
+
+	//method for actually concealing the item
+	UFUNCTION()
+	void concealItem();
 
 	MovementState currentState;
 	

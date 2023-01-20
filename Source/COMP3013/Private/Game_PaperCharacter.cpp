@@ -156,7 +156,7 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	else if(CharacterMovementComp->Velocity.Length() > 0) currentState = Walk;
 	else currentState = Idle;
 	
-	if (currentAction==conceal) {
+	if (currentAction!=nullAction) {
 		//broadcast to update ui
 		InteractionBarEvent.Broadcast();
 	}
@@ -260,12 +260,29 @@ void AGame_PaperCharacter::OpenInventory()
 }
 
 /** Player placing item in their inventory */
+//checks conditions to begin concealing
 void AGame_PaperCharacter::Conceal()
 {
 	if (Current_HeldItem != nullptr && Inventory->Capacity > Inventory->Items.Num())
 	{
-		beginAction(conceal,1.0f,FTimerDelegate::CreateUFunction(this,FName("endAction")));
+		beginAction(conceal,1.0f,FTimerDelegate::CreateUFunction(this,FName("concealItem")));
 	}
+}
+
+void AGame_PaperCharacter::concealItem()
+{
+	endAction();
+	//clears the action progress UI now that action is complete
+	InteractionBarEvent.Broadcast();
+	
+	Inventory->AddItem(Current_HeldItem);
+	Current_HeldItem = nullptr;
+	RefreshItemHUDEvent.Broadcast();
+	
+	//broadcasts conceal event to npcs
+	//ConcealItemEvent.Broadcast();
+	
+	Mesh_HeldItem->SetVisibility(false);
 }
 
 /** Handles actions based on PlayerState */
@@ -301,20 +318,7 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 			audioSource->Play();
 		}
 		break;
-	/*case PlayerState::Concealing:
-		TimeConcealing += deltatime;
-		InteractionBarEvent.Broadcast();
-		if (TimeConcealing >= TimeToConceal) {
-			TimeConcealing = 0;
-			mPlayerState = EEPlayerState::Idle;
-			Inventory->AddItem(Current_HeldItem);
-			Current_HeldItem = nullptr;
-			ConcealItemEvent.Broadcast();
-			RefreshItemHUDEvent.Broadcast();
-			InteractionBarEvent.Broadcast();
-			Mesh_HeldItem->SetVisibility(false);
-		}
-		break;*/
+	
 	}
 	
 		
