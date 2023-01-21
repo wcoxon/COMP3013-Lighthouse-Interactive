@@ -51,7 +51,7 @@ void ACamera::OnConstruction(const FTransform& Transform) {
 void ACamera::BeginPlay()
 {
 	Super::BeginPlay();
-	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
+
 
 	coneLight->SetInnerConeAngle(coneAngle);
 	coneLight->bUseInverseSquaredFalloff = false;
@@ -59,6 +59,8 @@ void ACamera::BeginPlay()
 	coneLight->SetIntensity(5);
 	coneLight->SetAttenuationRadius(coneLength);
 	coneLight->SetOuterConeAngle(coneAngle + 0.1f);
+
+	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
 	//coneLight->CastShadows = false;
 }
 
@@ -67,6 +69,11 @@ void ACamera::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (player == NULL) {
+		player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+		return;
+	}
+	
 	if (detectsPlayer()) setState(EECameraState::Following);
 	
 	StateManager(DeltaTime);

@@ -148,4 +148,6 @@ private:
 
 	void SusMeterChange(float DeltaTime);
 
+	AController* SavedController;
+	
 };

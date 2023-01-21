@@ -34,6 +34,11 @@ void AClerkNPC::BeginPlay()
 void AClerkNPC::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (player == NULL) {
+		player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+		return;
+	}
 	//behaviour based on current state
 	//subclass-specific state cases, clerks will tattle on you to security when they see you
 	switch(currentState)

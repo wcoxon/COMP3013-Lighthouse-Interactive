@@ -28,6 +28,10 @@ void AGame_Spawner::BeginPlay()
 		SavedController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 		SavedController->Possess(CharacterPawn);
 		
+		UE_LOG(LogTemp, Warning, TEXT("Player Controller: %s"), *SavedController->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("Player Pawn: %s"), *CharacterPawn->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("Player C Character: %s"), *SavedController->GetPawn()->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("Player C Character: %s"), *SavedController->GetPawn()->GetActorLocation().ToString());
 	}
 	
 }
