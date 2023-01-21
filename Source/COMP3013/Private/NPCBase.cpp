@@ -287,6 +287,11 @@ void ANPCBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	
+	if (player == NULL) {
+		player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+		return;
+	}
+	
 	switch(currentState)
 	{
 	case patrol:

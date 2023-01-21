@@ -82,6 +82,11 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 void AGame_PaperCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SavedController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	SavedController->Possess(this);
+
+	//UE_LOG(LogTemp, Warning, TEXT("Player Controller: %s"), *SavedController->GetName());
 	
 	//Grab character animations
 	animations.Add(FString("runLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Player/RunAnimation/PlayerRunLeft64.PlayerRunLeft64"), NULL, LOAD_None, NULL));
