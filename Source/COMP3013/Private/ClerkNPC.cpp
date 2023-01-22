@@ -4,7 +4,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
+#include "PaperFlipbook.h"
+#include "PaperFlipbookComponent.h"
 
 AClerkNPC::AClerkNPC()
 {
@@ -29,16 +30,44 @@ AClerkNPC::AClerkNPC()
 void AClerkNPC::BeginPlay()
 {
 	Super::BeginPlay();
+
+	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkLeft64.EmployeeWalkLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkRight64.EmployeeWalkRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkUp64.EmployeeWalkUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkDown64.EmployeeWalkDown64"), NULL, LOAD_None, NULL));
+
+	animations.Add(FString("walkDL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkDL64.EmployeeWalkDL64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkUL64.EmployeeWalkUL64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkDR64.EmployeeWalkDR64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkUR64.EmployeeWalkUR64"), NULL, LOAD_None, NULL));
+	
+	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/IdleAnimation/EmployeeIdleLeft64.EmployeeIdleLeft64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/IdleAnimation/EmployeeIdleRight64.EmployeeIdleRight64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/IdleAnimation/EmployeeIdleUp64.EmployeeIdleUp64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/IdleAnimation/EmployeeIdleDown64.EmployeeIdleDown64"), NULL, LOAD_None, NULL));
+
+	animations.Add(FString("idleDL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/IdleAnimation/EmployeeIdleDL64.EmployeeIdleDL64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/IdleAnimation/EmployeeIdleUL64.EmployeeIdleUL64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/IdleAnimation/EmployeeIdleDR64.EmployeeIdleDR64"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/IdleAnimation/EmployeeIdleUR64.EmployeeIdleUR64"), NULL, LOAD_None, NULL));
+	
+
+	CharacterFlipbook->SetFlipbook(animations["idleRight"]);
+	
+	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),GetNavAgentLocation());
+	
+	int patrolCount = 2;
+	for(int x=0;x<patrolCount;x++)
+	{
+		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),2000));
+	}
 	securityGuard = Cast<ASecurityNPC>(UGameplayStatics::GetActorOfClass(GetWorld(),ASecurityNPC::StaticClass()));
 }
 void AClerkNPC::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	if (player == NULL) {
-		player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-		return;
-	}
+	
 	//behaviour based on current state
 	//subclass-specific state cases, clerks will tattle on you to security when they see you
 	switch(currentState)
@@ -89,6 +118,6 @@ void AClerkNPC::Tick(float DeltaSeconds)
 	player->isSeen = true;
 	playerLastSeen = player->GetNavAgentLocation();
 	if(player->Suspicion>=100.0f) return setState(tattle);
-	if(player->currentState==Run) return setState(stare);
+	if(player->currentState==Run || player->currentAction==conceal) return setState(stare);
 	
 }

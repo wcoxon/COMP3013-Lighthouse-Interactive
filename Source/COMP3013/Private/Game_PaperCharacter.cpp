@@ -166,6 +166,11 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.8) currentState = Run;
 	else if(CharacterMovementComp->Velocity.Length() > 0) currentState = Walk;
 	else currentState = Idle;
+
+	if (currentAction == conceal && currentState != Idle) {
+		endAction();
+		InteractionBarEvent.Broadcast();
+	}
 	
 	if (currentAction!=nullAction) {
 		//broadcast to update ui
@@ -178,10 +183,6 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 
 	SusMeterChange(DeltaTime);
 
-	if (currentAction == conceal && currentState != Idle) {
-		endAction();
-		InteractionBarEvent.Broadcast();
-	}
 	//endGamePass();
 }
 
@@ -282,7 +283,7 @@ void AGame_PaperCharacter::concealItem()
 	RefreshItemHUDEvent.Broadcast();
 	
 	//broadcasts conceal event to npcs
-	//ConcealItemEvent.Broadcast();
+	ConcealItemEvent.Broadcast();
 	
 	heldItemMesh->SetVisibility(false);
 }
