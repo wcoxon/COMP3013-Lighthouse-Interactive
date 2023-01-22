@@ -23,16 +23,20 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	float PlayerSize = 1;
+	UPROPERTY()
+	int CustomerCount;
+
+	float customerSpawnCooldown;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 private:
-
+	USceneComponent* SceneComponent = GetRootComponent();
+	
 	AController* SavedController;
 };

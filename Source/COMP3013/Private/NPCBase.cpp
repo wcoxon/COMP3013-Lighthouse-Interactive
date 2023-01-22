@@ -4,6 +4,8 @@
 #include "NPCBase.h"
 
 #include <valarray>
+
+#include "CustomerNPC.h"
 #include "PaperFlipbookComponent.h"
 #include "Components/AudioComponent.h"
 #include "PaperFlipbook.h"
@@ -41,6 +43,11 @@ ANPCBase::ANPCBase()
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 500.0f;
 	CharacterMovementComp->BrakingDecelerationWalking = 10*moveSpeed;
+
+	CharacterCollider->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Ignore);
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	audioSource->VolumeMultiplier=0.f;
+	
 	
 }
 
@@ -57,11 +64,15 @@ void ANPCBase::setState(AIState state)
 bool ANPCBase::detectsActor(AActor* actor)
 {
 
-	//check if player is within vision distance
-	if(FVector::Distance(player->GetActorLocation(),GetActorLocation())>coneRadius)
+	
+	//check if actor is within vision distance
+	if(FVector::Distance(actor->GetActorLocation(),GetActorLocation())>coneRadius)
 	{
 		return false;
 	}
+
+	//if youre in their personal space they will detect u
+	if(FVector::Distance(actor->GetActorLocation(),GetActorLocation())<100) return true;
 	
 	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Player is within vision distance %f"), FVector::Distance(player->GetActorLocation(),GetActorLocation())));
 	//check if player is within vision cone
@@ -71,6 +82,7 @@ bool ANPCBase::detectsActor(AActor* actor)
 		return false;
 	}
 
+	
 	//check for obstacles using raycast
 	FHitResult hit;
 	const bool actorHit = GetWorld()->LineTraceSingleByChannel(hit,GetActorLocation(),actor->GetActorLocation(),ECC_Visibility,FCollisionQueryParams(),FCollisionResponseParams());
@@ -78,6 +90,19 @@ bool ANPCBase::detectsActor(AActor* actor)
 	{
 		return false;
 	}
+
+	DrawDebugLine(
+			GetWorld(),
+			actor->GetActorLocation()-FVector::UpVector*100,
+			actor->GetActorLocation()-displacement.GetSafeNormal()*50-FVector::UpVector*100,
+			FColor(255, 255-player->Suspicion*2.55, 0,0.3),
+			false, -1, 0,
+			12.333
+		);
+	/*if(drawLine)
+	{
+		GetWorld().draw
+	}*/
 	
 	return true;
 }
@@ -98,20 +123,30 @@ TArray<AActor*> ANPCBase::getVisibleActors(UClass* Type)
 	for(AActor* a : actorsInRange)
 	{
 		//UE_LOG(LogTemp, Log, TEXT("OverlappedActor: %s"), *a->GetName());
-		if(!detectsActor(a))
+		if(detectsActor(a))
 		{
-			actorsInRange.Remove(a);
+			LOSActorsInRange.Add(a);
 		}
 	}
-	return actorsInRange;
+	return LOSActorsInRange;
 	
 }
 
-void ANPCBase::playerPickup()
+void ANPCBase::playerCrimeCommitted()
 {
 	if(detectsActor(player))
 	{
-		currentState = pursue;
+		int visibleCustomers = getVisibleActors(ACustomerNPC::StaticClass()).Num();
+		//chance of being incriminated decreases from customers also visible to the npc
+		//if it rolls 0 the player gets seen stealing, the more customers around the less likely
+		//halved the scale because it's a little broken if 4 customers gives you a 1/5 chance of being sussed on
+		bool sawCrime = FMath::RandRange(0, visibleCustomers/2)==0?true:false;
+		UE_LOG(LogTemp, Warning, TEXT("customer camoflauge: %i"), visibleCustomers);
+		UE_LOG(LogTemp, Warning, TEXT("crime seen: %i"), sawCrime);
+		if(sawCrime)
+		{
+			player->Suspicion=100;
+		}
 	}
 }
 
@@ -142,9 +177,8 @@ void ANPCBase::BeginPlay()
 	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
 	
 	//finding player pawn and binding pickup delegate
-	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
-	
-	//player->ConcealItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerPickup,TEXT("playerPickup"));
+	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(),0));
+	player->ConcealItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerCrimeCommitted,TEXT("playerCrimeCommitted"));
 
 	//setting the spotlight to be a vision cone
 	coneLight->SetInnerConeAngle(FMath::RadiansToDegrees(coneAngle));
@@ -153,7 +187,8 @@ void ANPCBase::BeginPlay()
 	coneLight->SetIntensity(5);
 	coneLight->SetAttenuationRadius(coneRadius);
 	coneLight->SetRelativeLocation(FVector(0.0f, 4.25f, 34.0f));
-	
+	//turning off lights for now
+	coneLight->SetIntensity(0);
 	//set initial AI state to patrolling
 	currentState=patrol;
 }
@@ -247,11 +282,6 @@ void ANPCBase::followPath(float deltaSec)
 void ANPCBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
-	if (player == NULL) {
-		player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-		return;
-	}
 	
 	switch(currentState)
 	{

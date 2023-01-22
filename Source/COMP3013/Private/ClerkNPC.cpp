@@ -118,6 +118,6 @@ void AClerkNPC::Tick(float DeltaSeconds)
 	player->isSeen = true;
 	playerLastSeen = player->GetNavAgentLocation();
 	if(player->Suspicion>=100.0f) return setState(tattle);
-	if(player->currentState==Run) return setState(stare);
+	if(player->currentState==Run || player->currentAction==conceal) return setState(stare);
 	
 }
