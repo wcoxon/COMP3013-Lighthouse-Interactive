@@ -334,7 +334,7 @@ void ANPCBase::Tick(float DeltaSeconds)
 		turnTowards(player->GetNavAgentLocation(),DeltaSeconds);
 		
 		//if the player acts cringe reset timer by starting wait over
-		if(player->currentState==Run) GetWorldTimerManager().ClearTimer(actionTimerHandle);
+		if(player->currentState==Run || player->currentAction==conceal) GetWorldTimerManager().ClearTimer(actionTimerHandle);
 		break;
 		
 	default:
