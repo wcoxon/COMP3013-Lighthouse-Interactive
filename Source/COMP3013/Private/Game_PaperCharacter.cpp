@@ -353,7 +353,7 @@ void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	switch(currentAction)
 	{
 	case conceal:
-		Suspicion += 25.0f*DeltaTime;
+		Suspicion += 35.0f*DeltaTime;
 		break;
 				
 	default:
@@ -363,7 +363,7 @@ void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	switch (currentState)
 	{
 	case Run:
-		Suspicion+= 10.0f*DeltaTime;
+		Suspicion+= 20.0f*DeltaTime;
 		break;
 				
 	default:
