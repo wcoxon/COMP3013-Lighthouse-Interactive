@@ -28,6 +28,8 @@ public:
 	float Price;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data", meta = (ClampMin = 0.0))
 	float Weight;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data", meta = (ClampMin = 0.0))
+	float Duration;
 
 	//visuals
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Data")

@@ -8,6 +8,7 @@ UItem::UItem()
 	Name = FText::FromString("Default Name");
 	Description = FText::FromString("Default Description");
 	Weight = 1.f;
+	Duration = 1.f;
 }
 
 

@@ -253,7 +253,7 @@ void AGame_PaperCharacter::Conceal()
 {
 	if (heldItem != nullptr && Inventory->Capacity > Inventory->Items.Num() && currentAction != conceal && currentState == Idle)
 	{
-		beginAction(conceal,1.0f,FTimerDelegate::CreateUFunction(this,FName("concealItem")));
+		beginAction(conceal,heldItem->Duration,FTimerDelegate::CreateUFunction(this,FName("concealItem")));
 	}
 }
 
