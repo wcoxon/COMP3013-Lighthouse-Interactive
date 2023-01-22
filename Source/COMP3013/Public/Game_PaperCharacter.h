@@ -127,13 +127,16 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FInteractionBar InteractionBarEvent;
+
+	UPROPERTY(BlueprintAssignable)
+	FConcealItem ConcealItemEvent;
 	//FInteractionBar actionProgressEvent;
 
 	//UPROPERTY(BlueprintAssignable)
 	//FSuspicionMeterChange suspicionEvent;
 	
 	//represents whether the player was seen since the last tick
-	
+	UPROPERTY(BlueprintReadOnly)
 	bool isSeen = false;
 	
 protected:

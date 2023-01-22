@@ -49,7 +49,8 @@ public:
 	void setState(AIState state);
 	
 	UFUNCTION()
-	void playerPickup();
+	void playerCrimeCommitted();
+	
 	UPROPERTY(EditAnywhere)
 	FVector coneDirection;
 protected:
