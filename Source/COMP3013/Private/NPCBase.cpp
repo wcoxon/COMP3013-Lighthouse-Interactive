@@ -118,34 +118,12 @@ void ANPCBase::playerPickup()
 void ANPCBase::BeginPlay()
 {
 	Super::BeginPlay();
-	//setting all the animations for this npc
-	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkLeft64.EmployeeWalkLeft64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkRight64.EmployeeWalkRight64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkUp64.EmployeeWalkUp64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkDown64.EmployeeWalkDown64"), NULL, LOAD_None, NULL));
 
-	animations.Add(FString("walkDL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkDL64.EmployeeWalkDL64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkUL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkUL64.EmployeeWalkUL64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkDR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkDR64.EmployeeWalkDR64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("walkUR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/WalkAnimation/EmployeeWalkUR64.EmployeeWalkUR64"), NULL, LOAD_None, NULL));
-	
-	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleLeft64.EmployeeIdleLeft64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleRight64.EmployeeIdleRight64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleUp64.EmployeeIdleUp64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleDown64.EmployeeIdleDown64"), NULL, LOAD_None, NULL));
-
-	animations.Add(FString("idleDL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleDL64.EmployeeIdleDL64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleUL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleUL64.EmployeeIdleUL64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleDR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleDR64.EmployeeIdleDR64"), NULL, LOAD_None, NULL));
-	animations.Add(FString("idleUR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Employees/IdleAnimation/EmployeeIdleUR64.EmployeeIdleUR64"), NULL, LOAD_None, NULL));
-
-	CharacterFlipbook->SetFlipbook(animations["idleRight"]);
-	
 	CharacterFlipbook->SetRenderCustomDepth(false);
 	//base height of the sprite i.e. how many pixels tall it is since pixels per unit is 1
 	float spriteHeight = 64.0;
 	//offset from the bottom of the sprite to the feet of the character
-	float spriteGroundLevel = 5.0;
+	float spriteGroundLevel = 3.0;
 	//scale to resize the actor
 	float actorScale = 300.0;
 	//the angle that we set the sprite to
@@ -168,10 +146,6 @@ void ANPCBase::BeginPlay()
 	
 	//player->ConcealItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerPickup,TEXT("playerPickup"));
 
-	//initialising nav path
-	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
-	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),GetNavAgentLocation());
-
 	//setting the spotlight to be a vision cone
 	coneLight->SetInnerConeAngle(FMath::RadiansToDegrees(coneAngle));
 	coneLight->bUseInverseSquaredFalloff = 0;
@@ -179,13 +153,6 @@ void ANPCBase::BeginPlay()
 	coneLight->SetIntensity(5);
 	coneLight->SetAttenuationRadius(coneRadius);
 	coneLight->SetRelativeLocation(FVector(0.0f, 4.25f, 34.0f));
-
-	//initialising random patrol pattern containing 3 points
-	int patrolCount = 2;
-	for(int x=0;x<patrolCount;x++)
-	{
-		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),2000));
-	}
 	
 	//set initial AI state to patrolling
 	currentState=patrol;

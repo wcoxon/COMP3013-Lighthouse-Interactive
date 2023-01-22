@@ -4,8 +4,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
-
+#include "PaperFlipbookComponent.h"
+#include "PaperFlipbook.h"
 ASecurityNPC::ASecurityNPC()
 {
 	//assigning fields
@@ -29,16 +29,40 @@ ASecurityNPC::ASecurityNPC()
 void ASecurityNPC::BeginPlay()
 {
 	Super::BeginPlay();
-	CharacterFlipbook->SetSpriteColor(FLinearColor(1.0f,0.0f,0.0f));
+
+	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkLeft.SecurityWalkLeft"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkRight.SecurityWalkRight"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkUp.SecurityWalkUp"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkDown.SecurityWalkDown"), NULL, LOAD_None, NULL));
+
+	animations.Add(FString("walkDL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkDL.SecurityWalkDL"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkUL.SecurityWalkUL"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkDR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkDR.SecurityWalkDR"), NULL, LOAD_None, NULL));
+	animations.Add(FString("walkUR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkUR.SecurityWalkUR"), NULL, LOAD_None, NULL));
+	
+	animations.Add(FString("idleLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Idle/SecurityIdleLeft.SecurityIdleLeft"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Idle/SecurityIdleRight.SecurityIdleRight"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUp"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Idle/SecurityIdleUp.SecurityIdleUp"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDown"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Idle/SecurityIdleDown.SecurityIdleDown"), NULL, LOAD_None, NULL));
+
+	animations.Add(FString("idleDL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Idle/SecurityIdleDL.SecurityIdleDL"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUL"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Idle/SecurityIdleUL.SecurityIdleUL"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleDR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Idle/SecurityIdleDR.SecurityIdleDR"), NULL, LOAD_None, NULL));
+	animations.Add(FString("idleUR"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Idle/SecurityIdleUR.SecurityIdleUR"), NULL, LOAD_None, NULL));
+	
+	CharacterFlipbook->SetFlipbook(animations["idleRight"]);
+	
+	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),GetNavAgentLocation());
+	int patrolCount = 2;
+	for(int x=0;x<patrolCount;x++)
+	{
+		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),2000));
+	}
 }
 void ASecurityNPC::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
-	if (player == NULL) {
-		player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-		return;
-	}
 	
 	switch(currentState)
 	{
