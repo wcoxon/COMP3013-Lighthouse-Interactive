@@ -71,9 +71,11 @@ void ACamera::BeginPlay()
 
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
 	securityGuard = Cast<ASecurityNPC>(UGameplayStatics::GetActorOfClass(GetWorld(),ASecurityNPC::StaticClass()));
+
+	player->ConcealItemEvent.AddDynamic(this,&ACamera::playerCrimeCommitted);
+
 	visionCone->coneLight->SetIntensity(0.f);
 	player->SusMaxEvent.AddDynamic(this, &ACamera::EGCOn);
-	//player->ConcealItemEvent.AddDynamic(this,&ACamera::playerCrimeCommitted);
 
 	//coneLight->CastShadows = false;
 

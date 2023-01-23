@@ -31,7 +31,7 @@ void AGame_Spawner::BeginPlay()
 	SavedController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	SavedController->Possess(CharacterPawn);
 
-	customerSpawnCooldown = 5.0f;
+	customerSpawnCooldown = 10.0f;
 	//UE_LOG(LogTemp, Warning, TEXT("Player Controller: %s"), *SavedController->GetName());
 	//UE_LOG(LogTemp, Warning, TEXT("Player Pawn: %s"), *CharacterPawn->GetName());
 	//UE_LOG(LogTemp, Warning, TEXT("Player C Character: %s"), *SavedController->GetPawn()->GetName());
@@ -45,10 +45,10 @@ void AGame_Spawner::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	customerSpawnCooldown-= DeltaTime;
-	if(customerSpawnCooldown<0.f && CustomerCount<=30)
+	if(customerSpawnCooldown<0.f && CustomerCount<=7)
 	{
 		GetWorld()->SpawnActor<ACustomerNPC>( GetActorLocation(), GetActorRotation());
-		customerSpawnCooldown = 5.0f;
+		customerSpawnCooldown = 10.0f;
 		CustomerCount+=1;
 	}
 }

@@ -15,7 +15,8 @@ class COMP3013_API ASecurityNPC : public ANPCBase
 	GENERATED_BODY()
 public:
 	ASecurityNPC();
-
+	
+	UFUNCTION()
 	void EgcOn();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SoundFX")

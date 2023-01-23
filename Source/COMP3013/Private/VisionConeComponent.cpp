@@ -91,7 +91,7 @@ void UVisionConeComponent::BeginPlay()
 	coneLight->SetInnerConeAngle(FMath::RadiansToDegrees(coneAngle));
 	coneLight->SetOuterConeAngle(FMath::RadiansToDegrees(coneAngle));
 	coneLight->bUseInverseSquaredFalloff = 0;
-	coneLight->SetLightFalloffExponent(0.25);
+	coneLight->SetLightFalloffExponent(0.05);
 	coneLight->SetIntensity(5);
 	coneLight->SetAttenuationRadius(coneRadius);
 	coneLight->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
