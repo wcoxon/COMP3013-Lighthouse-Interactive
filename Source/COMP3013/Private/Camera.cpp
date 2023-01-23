@@ -119,7 +119,7 @@ void ACamera::StateManager(float deltaTime)
 			float angle = FMath::RadiansToDegrees(FMath::Atan2(toPlayer.Y, toPlayer.X));
 			turnTowards(angle, deltaTime, 45.f);
 			currentUnfollowingDuration = 0.f;
-			player->isSeen=true;
+			player->isSeen = true;
 		} else {
 			currentUnfollowingDuration += deltaTime;
 			if (currentUnfollowingDuration >= maxUnfollowDuration) {
@@ -144,7 +144,6 @@ void ACamera::setState(EECameraState newState)
 		IdleCurrentDuration = 0.0f;
 		//Set duration between Min/Max
 		IdleDuration = FMath::FRandRange(MinWait, MaxWait);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Idle Duration: %f"), IdleDuration));
 		break;
 	case EECameraState::Rotating:
 		bIsClockwise = !bIsClockwise;
