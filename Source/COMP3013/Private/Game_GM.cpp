@@ -10,5 +10,7 @@ AGame_GM::AGame_GM()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	DefaultPawnClass = nullptr;
+
 	HUDClass = APlayerHUD::StaticClass();
 }

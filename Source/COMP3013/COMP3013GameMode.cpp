@@ -10,17 +10,17 @@ ACOMP3013GameMode::ACOMP3013GameMode()
 	// use our custom PlayerController class
 	PlayerControllerClass = ACOMP3013PlayerController::StaticClass();
 
-	// set default pawn class to our Blueprinted character
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/ThirdParty/TopDown/Blueprints/BP_TopDownCharacter"));
+	/*// set default pawn class to our Blueprinted character
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/ThirdParty/TopDown/Blueprints/BP_TopDownCharacter.BP_TopDownCharacter"));
 	if (PlayerPawnBPClass.Class != nullptr)
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
 
 	// set default controller to our Blueprinted controller
-	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerBPClass(TEXT("/ThirdParty/TopDown/Blueprints/BP_TopDownPlayerController"));
+	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerBPClass(TEXT("/Game/ThirdParty/TopDown/Blueprints/BP_TopDownPlayerController.BP_TopDownPlayerController"));
 	if(PlayerControllerBPClass.Class != NULL)
 	{
 		PlayerControllerClass = PlayerControllerBPClass.Class;
-	}
+	}*/
 }
