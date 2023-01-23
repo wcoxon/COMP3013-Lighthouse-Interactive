@@ -71,6 +71,9 @@ public:
 	
 	UFUNCTION()
 	void playerCrimeCommitted();
+
+	UFUNCTION()
+	void EGCOn();
 	
 protected:
 	// Called when the game starts or when spawned
