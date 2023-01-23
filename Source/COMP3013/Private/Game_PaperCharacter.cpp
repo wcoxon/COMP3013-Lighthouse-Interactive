@@ -314,7 +314,7 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 	switch(currentAction)
 	{
 	case grab:
-		setDirectionalAnimation(direction,"idle");
+		setDirectionalAnimation(direction,"steal");
 		CharacterFlipbook->SetPlayRate(CharacterFlipbook->GetFlipbookLength()/GetWorldTimerManager().GetTimerRate(actionTimerHandle));
 		return;
 	default:
