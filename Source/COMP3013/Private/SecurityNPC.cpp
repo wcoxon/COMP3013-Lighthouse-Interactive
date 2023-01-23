@@ -97,7 +97,11 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 			for (auto Item : player->Inventory->Items) {
 				valuables += Item->Price;
 			}
-			if (GI) GI->DeductMoney(valuables * 0.8);
+			if (GI) {
+				GI->DeductMoney(valuables * 0.8);
+				GI->SetCaughtState(true);
+			}
+			
 			UGameplayStatics::OpenLevel(GetWorld(), "TransitionLevel", true);
 		}
 	}

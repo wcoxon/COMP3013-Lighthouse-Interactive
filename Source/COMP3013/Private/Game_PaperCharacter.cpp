@@ -211,6 +211,7 @@ void AGame_PaperCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 	// Bind the controls
 	InputComponents->BindAction("Pickup", IE_Pressed, this, &AGame_PaperCharacter::Pickup);
 	InputComponents->BindAction("Inventory", IE_Pressed, this, &AGame_PaperCharacter::OpenInventory);
+	InputComponents->BindAction("Drop", IE_Pressed, this, &AGame_PaperCharacter::DropItem);
 	InputComponents->BindAction("Conceal", IE_Pressed, this, &AGame_PaperCharacter::Conceal);
 	InputComponents->BindAction("Sprint", IE_Pressed, this, &AGame_PaperCharacter::SprintOn);
 	InputComponents->BindAction("Sprint", IE_Released, this, &AGame_PaperCharacter::SprintOff);
@@ -266,6 +267,14 @@ void AGame_PaperCharacter::OpenInventory()
 	}
 }
 
+void AGame_PaperCharacter::DropItem() {
+	if (heldItem != nullptr) {
+		heldItem = nullptr;
+		RefreshItemHUDEvent.Broadcast();
+		heldItemMesh->SetVisibility(false);
+	}
+}
+
 /** Player placing item in their inventory */
 //checks conditions to begin concealing
 void AGame_PaperCharacter::Conceal()
@@ -315,9 +324,11 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 	switch(currentAction)
 	{
 	case grab:
-		setDirectionalAnimation(direction,"steal");
-		CharacterFlipbook->SetPlayRate(CharacterFlipbook->GetFlipbookLength()/GetWorldTimerManager().GetTimerRate(actionTimerHandle));
-		return;
+		if (currentState == MovementState::Idle) {
+			setDirectionalAnimation(direction,"steal");
+			CharacterFlipbook->SetPlayRate(CharacterFlipbook->GetFlipbookLength()/GetWorldTimerManager().GetTimerRate(actionTimerHandle));
+			return;
+		}
 	default:
 		break;
 		

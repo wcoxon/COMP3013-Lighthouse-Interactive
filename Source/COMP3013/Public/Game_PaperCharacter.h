@@ -92,6 +92,7 @@ public:
 	void SprintOff();
 	void Pickup();
 	void OpenInventory();
+	void DropItem();
 	
 	//method to bind to conceal button
 	void Conceal();
