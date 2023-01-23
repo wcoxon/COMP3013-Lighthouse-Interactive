@@ -4,6 +4,7 @@
 #include "Game_PaperCharacter.h"
 
 #include "Item_Base.h"
+#include "MainGameInstance.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperFlipbook.h"
 #include "Camera/CameraComponent.h"
@@ -176,6 +177,23 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	SusAudioComponent->SetPitchMultiplier(Suspicion /50.f);
 	if (!isSeen || Suspicion > 100.f) {
 		SusAudioComponent->Stop();
+	}
+
+	if (Caught) {
+		transTimer -= DeltaTime;
+		if (transTimer <= 0.f) {
+			UMainGameInstance* GI = Cast<UMainGameInstance>(GetGameInstance());
+			float valuables = 0.0f;
+			for (auto Item : Inventory->Items) {
+				valuables += Item->Price;
+			}
+			if (GI) {
+				GI->DeductMoney(valuables * 0.8);
+				GI->SetCaughtState(true);
+			}
+			
+			UGameplayStatics::OpenLevel(GetWorld(), "TransitionLevel", true);
+		}
 	}
 	
 	if(inputVector.Length()>0)

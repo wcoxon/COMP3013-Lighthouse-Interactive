@@ -33,4 +33,6 @@ private:
 	FVector playerLastSeen;
 	UPROPERTY()
 	USoundCue* TattleSound;
+	UPROPERTY()
+	USoundCue* PunchSoundCue;
 };

@@ -80,12 +80,25 @@ void AClerkNPC::BeginPlay()
 
 	TattleSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Tattle.Tattle")));
 
+	PunchSoundCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/SoundPunch.SoundPunch")));
+	
 	player->SusMaxEvent.AddDynamic(this, &AClerkNPC::EgcOn);
 	//TattleaudioComponent->SetSound(TattleSound);
 }
 void AClerkNPC::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (player->Suspicion >= 100.f && GetDistanceTo(player)<80.0f && !player->Caught)
+	{
+		player->Caught = true;
+		//ig they catch you in here
+		UE_LOG(LogTemp, Log, TEXT("Caught you lose"));
+		player->moveSpeed = 0;
+		player->WalkSpeed = 0;
+		UGameplayStatics::PlaySound2D(GetWorld(), PunchSoundCue, 1.0f, 1.0f, 0.0f);
+		player->SprintOn();
+	}
 	
 	//behaviour based on current state
 	//subclass-specific state cases, clerks will tattle on you to security when they see you

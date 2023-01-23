@@ -158,6 +158,9 @@ public:
 
 	UPROPERTY()
 	UAudioComponent* SusAudioComponent;
+
+	UPROPERTY()
+	bool Caught = false;
 	
 	
 protected:
@@ -178,6 +181,8 @@ private:
 	
 	float endPass = 0;
 
+	float transTimer = 1.0f;
+	
 	UTexture2D* RedLUT;
 	
 };

@@ -88,31 +88,15 @@ void ASecurityNPC::BeginPlay()
 void ASecurityNPC::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	if (Caught) {
-		transTimer -= DeltaSeconds;
-		if (transTimer <= 0.f) {
-			UMainGameInstance* GI = Cast<UMainGameInstance>(GetGameInstance());
-			float valuables = 0.0f;
-			for (auto Item : player->Inventory->Items) {
-				valuables += Item->Price;
-			}
-			if (GI) {
-				GI->DeductMoney(valuables * 0.8);
-				GI->SetCaughtState(true);
-			}
-			
-			UGameplayStatics::OpenLevel(GetWorld(), "TransitionLevel", true);
-		}
-	}
+	
 	switch(currentState)
 	{
 	case pursue:
 		visionCone->coneLight->SetIntensity(10.f);
 		visionCone->coneLight->SetLightColor(FLinearColor::Yellow);
-		if(GetDistanceTo(player)<300.0f && !Caught)
+		if(GetDistanceTo(player)<300.0f && !player->Caught)
 		{
-			Caught = true;
+			player->Caught = true;
 			//ig they catch you in here
 			UE_LOG(LogTemp, Log, TEXT("Caught you lose"));
 			player->moveSpeed = 0;
