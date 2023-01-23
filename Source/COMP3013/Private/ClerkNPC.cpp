@@ -33,6 +33,12 @@ AClerkNPC::AClerkNPC()
 	TattleaudioComponent->SetupAttachment(RootComponent);
 	TattleaudioComponent->bAutoActivate = false;
 }
+
+void AClerkNPC::EgcOn() {
+	visionCone->coneLight->SetIntensity(10.f);
+	visionCone->coneLight->SetLightColor(FLinearColor::Red);
+}
+
 void AClerkNPC::BeginPlay()
 {
 	Super::BeginPlay();
@@ -71,6 +77,8 @@ void AClerkNPC::BeginPlay()
 	securityGuard = Cast<ASecurityNPC>(UGameplayStatics::GetActorOfClass(GetWorld(),ASecurityNPC::StaticClass()));
 
 	TattleSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Tattle.Tattle")));
+
+	player->SusMaxEvent.AddDynamic(this, &AClerkNPC::EgcOn);
 	//TattleaudioComponent->SetSound(TattleSound);
 }
 void AClerkNPC::Tick(float DeltaSeconds)

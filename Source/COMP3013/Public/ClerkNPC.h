@@ -19,6 +19,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AudioComponent")
 	UAudioComponent* TattleaudioComponent;
+
+	UFUNCTION()
+	void EgcOn();
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;

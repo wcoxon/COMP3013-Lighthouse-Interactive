@@ -60,6 +60,10 @@ void ACamera::playerCrimeCommitted()
 	}
 }
 
+void ACamera::EGCOn() {
+	visionCone->coneLight->SetIntensity(10.f);
+}
+
 // Called when the game starts or when spawned
 void ACamera::BeginPlay()
 {
@@ -68,6 +72,7 @@ void ACamera::BeginPlay()
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
 	securityGuard = Cast<ASecurityNPC>(UGameplayStatics::GetActorOfClass(GetWorld(),ASecurityNPC::StaticClass()));
 	visionCone->coneLight->SetIntensity(0.f);
+	player->SusMaxEvent.AddDynamic(this, &ACamera::EGCOn);
 	//player->ConcealItemEvent.AddDynamic(this,&ACamera::playerCrimeCommitted);
 
 	//coneLight->CastShadows = false;
@@ -141,7 +146,8 @@ void ACamera::StateManager(float deltaTime)
 
 void ACamera::setState(EECameraState newState)
 {
-	visionCone->coneLight->SetLightColor(FLinearColor::White);
+	//visionCone->coneLight->SetLightColor(FLinearColor::White);
+	visionCone->coneLight->SetLightColor(FLinearColor::Red);
 	CameraState = newState;
 	switch (CameraState)
 	{
@@ -160,10 +166,10 @@ void ACamera::setState(EECameraState newState)
 		{
 			securityGuard->pathToTarget(player->GetActorLocation());
 			securityGuard->setState(pursue);
-			visionCone->coneLight->SetLightColor(FLinearColor::Red);
+			//visionCone->coneLight->SetLightColor(FLinearColor::Red);
 			break;
 		}
-		visionCone->coneLight->SetLightColor(FLinearColor::Blue);
+		//visionCone->coneLight->SetLightColor(FLinearColor::Blue);
 		break;
 	}
 }

@@ -23,12 +23,22 @@ ASecurityNPC::ASecurityNPC()
 	//CharacterFlipbook->SetRenderCustomDepth(true);
 	
 	//setting up movement properties
-	moveSpeed = 800;
+	moveSpeed = 700;
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 20*moveSpeed;
 	CharacterMovementComp->BrakingDecelerationWalking = 10*moveSpeed;
+
+	TriggerSound = CreateDefaultSubobject<UAudioComponent>(TEXT("TriggerSound"));
+	TriggerSound->SetupAttachment(RootComponent);
+	TriggerSound->bAutoActivate = false;
 }
+
+void ASecurityNPC::EgcOn() {
+	visionCone->coneLight->SetIntensity(5.f);
+	visionCone->coneLight->SetLightColor(FLinearColor::Yellow);
+}
+
 void ASecurityNPC::BeginPlay()
 {
 	Super::BeginPlay();
@@ -64,6 +74,10 @@ void ASecurityNPC::BeginPlay()
 	}
 
 	PunchSoundCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/SoundPunch.SoundPunch")));
+	TriggerSoundCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Waaa.Waaa")));
+	
+	//TriggerSound->SetSound(TriggerSoundCue);
+	player->SusMaxEvent.AddDynamic(this, &ASecurityNPC::EgcOn);
 }
 void ASecurityNPC::Tick(float DeltaSeconds)
 {
@@ -72,6 +86,8 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 	switch(currentState)
 	{
 	case pursue:
+		visionCone->coneLight->SetIntensity(10.f);
+		visionCone->coneLight->SetLightColor(FLinearColor::Yellow);
 		if(GetDistanceTo(player)<300.0f && !Caught)
 		{
 			Caught = true;
@@ -85,6 +101,7 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 		if(visionCone->detectsActor(player))
 		{
 			pathToTarget(player->GetNavAgentLocation());
+			if (!TriggerSound->IsPlaying()) TriggerSound->Play();
 		}
 		else
 		{
