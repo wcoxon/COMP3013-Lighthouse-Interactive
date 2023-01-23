@@ -5,7 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Game_PaperCharacter.h"
-#include "Components/SpotLightComponent.h"
+#include "VisionConeComponent.h"
+#include "SecurityNPC.h"
 #include "Camera.generated.h"
 
 UENUM(BlueprintType)
@@ -36,7 +37,6 @@ public:
 	void turnTowards(float target, float deltaTime, float speed);
 	void StateManager(float deltaTime);
 	void setState(EECameraState newState);
-	bool detectsPlayer();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float Angle1;
@@ -46,12 +46,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float turnSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
-	float coneLength;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
-	float coneAngle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float MinWait;
@@ -67,9 +61,17 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera Mesh")
 	USceneComponent* CameraRoot;
+
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera Light")
-	USpotLightComponent* coneLight;
+	UPROPERTY(VisibleAnywhere)
+	UVisionConeComponent* visionCone;
+
+	UPROPERTY()
+	ASecurityNPC* securityGuard;
+	
+	UFUNCTION()
+	void playerCrimeCommitted();
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

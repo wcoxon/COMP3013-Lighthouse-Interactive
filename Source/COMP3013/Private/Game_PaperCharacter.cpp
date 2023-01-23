@@ -172,7 +172,7 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	if(CharacterMovementComp->Velocity.Length()>moveSpeed*0.8) currentState = Run;
 	else if(CharacterMovementComp->Velocity.Length() > 0) currentState = Walk;
 	else currentState = Idle;
-
+	
 	if (currentAction == conceal && currentState != Idle) {
 		endAction();
 		InteractionBarEvent.Broadcast();
@@ -190,6 +190,9 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	SusMeterChange(DeltaTime);
 
 	endGamePass(DeltaTime);
+	
+	isSeen = false;
+
 }
 
 //UNREAL DEFAULT FUNCTION - Bind inputs to functions
@@ -231,7 +234,6 @@ void AGame_PaperCharacter::Pickup()
 		{
 			if (UKismetSystemLibrary::DoesImplementInterface(Actor, UInteraction::StaticClass()))
 			{
-				
 				AItem_Base* CurrentItem = Cast<AItem_Base>(Actor);
 				beginAction(grab,0.5f,FTimerDelegate::CreateUFunction(this,FName("grabItem"),CurrentItem->ItemToGive));
 				break;
@@ -299,6 +301,18 @@ void AGame_PaperCharacter::concealItem()
 void AGame_PaperCharacter::StateManager(float deltatime) {
 
 	float animationProgress;
+
+	switch(currentAction)
+	{
+	case grab:
+		setDirectionalAnimation(direction,"idle");
+		CharacterFlipbook->SetPlayRate(CharacterFlipbook->GetFlipbookLength()/GetWorldTimerManager().GetTimerRate(actionTimerHandle));
+		return;
+	default:
+		break;
+		
+	}
+	
 	switch (currentState) {
 	case Idle:
 		setDirectionalAnimation(direction,"idle");
@@ -330,8 +344,8 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 		break;
 	
 	}
+
 	
-		
 }
 
 void AGame_PaperCharacter::endGamePass(float deltaTime) {
@@ -398,8 +412,4 @@ void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	}
 	
 	SusMeterChangeEvent.Broadcast();
-	
-	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
-	//had an npc detect me since. i'll now know at the beginning of next tick if one of the npcs knocked this back to true
-	isSeen = false;
 }

@@ -22,15 +22,19 @@
 ANPCBase::ANPCBase()
 {
 	//initialising components
-	coneLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("spotlightComp"));
-	coneLight->SetupAttachment(CharacterCollider);
+	visionCone= CreateDefaultSubobject<UVisionConeComponent>(TEXT("VisionCone"));
+	visionCone->SetupAttachment(RootComponent);
+	
 	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
-
+	audioSource->SetupAttachment(RootComponent);
+	
+	
 	//assigning fields
-	coneRadius = 2000.0;
-	coneAngle = FMath::DegreesToRadians(45.0);
+	visionCone->coneRadius = 2000.0;
+	visionCone->coneAngle = FMath::DegreesToRadians(45.0);
+	
 	direction=FVector(1,0,0);
-	coneDirection=FVector(1,0,0);
+	
 	turnSpeed = FMath::DegreesToRadians(180);
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
@@ -61,82 +65,11 @@ void ANPCBase::setState(AIState state)
 	UE_LOG(LogTemp, Log, TEXT("%i %f"), state,GetWorldTimerManager().GetTimerElapsed(actionTimerHandle));
 }
 
-bool ANPCBase::detectsActor(AActor* actor)
-{
-
-	
-	//check if actor is within vision distance
-	if(FVector::Distance(actor->GetActorLocation(),GetActorLocation())>coneRadius)
-	{
-		return false;
-	}
-
-	//if youre in their personal space they will detect u
-	if(FVector::Distance(actor->GetActorLocation(),GetActorLocation())<100) return true;
-	
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Player is within vision distance %f"), FVector::Distance(player->GetActorLocation(),GetActorLocation())));
-	//check if player is within vision cone
-	const FVector displacement = actor->GetActorLocation()-GetActorLocation();
-	if(abs(FMath::FindDeltaAngleRadians(displacement.HeadingAngle(),coneDirection.HeadingAngle()))>coneAngle)
-	{
-		return false;
-	}
-
-	
-	//check for obstacles using raycast
-	FHitResult hit;
-	const bool actorHit = GetWorld()->LineTraceSingleByChannel(hit,GetActorLocation(),actor->GetActorLocation(),ECC_Visibility,FCollisionQueryParams(),FCollisionResponseParams());
-	if(actorHit && hit.GetActor())
-	{
-		return false;
-	}
-
-	DrawDebugLine(
-			GetWorld(),
-			actor->GetActorLocation()-FVector::UpVector*100,
-			actor->GetActorLocation()-displacement.GetSafeNormal()*50-FVector::UpVector*100,
-			FColor(255, 255-player->Suspicion*2.55, 0,0.3),
-			false, -1, 0,
-			12.333
-		);
-	/*if(drawLine)
-	{
-		GetWorld().draw
-	}*/
-	
-	return true;
-}
-
-TArray<AActor*> ANPCBase::getVisibleActors(UClass* Type)
-{
-	TArray<AActor*> actorsInRange;
-	UKismetSystemLibrary::SphereOverlapActors(
-		GetWorld(),
-		GetActorLocation(),
-		coneRadius,
-		{},
-		Type,
-		{},
-		actorsInRange);
-	
-	TArray<AActor*> LOSActorsInRange;
-	for(AActor* a : actorsInRange)
-	{
-		//UE_LOG(LogTemp, Log, TEXT("OverlappedActor: %s"), *a->GetName());
-		if(detectsActor(a))
-		{
-			LOSActorsInRange.Add(a);
-		}
-	}
-	return LOSActorsInRange;
-	
-}
-
 void ANPCBase::playerCrimeCommitted()
 {
-	if(detectsActor(player))
+	if(visionCone->detectsActor(player))
 	{
-		int visibleCustomers = getVisibleActors(ACustomerNPC::StaticClass()).Num();
+		int visibleCustomers = visionCone->getVisibleActors(ACustomerNPC::StaticClass()).Num();
 		//chance of being incriminated decreases from customers also visible to the npc
 		//if it rolls 0 the player gets seen stealing, the more customers around the less likely
 		//halved the scale because it's a little broken if 4 customers gives you a 1/5 chance of being sussed on
@@ -180,15 +113,9 @@ void ANPCBase::BeginPlay()
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(),0));
 	player->ConcealItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerCrimeCommitted,TEXT("playerCrimeCommitted"));
 
-	//setting the spotlight to be a vision cone
-	coneLight->SetInnerConeAngle(FMath::RadiansToDegrees(coneAngle));
-	coneLight->bUseInverseSquaredFalloff = 0;
-	coneLight->SetLightFalloffExponent(0.25);
-	coneLight->SetIntensity(5);
-	coneLight->SetAttenuationRadius(coneRadius);
-	coneLight->SetRelativeLocation(FVector(0.0f, 4.25f, 34.0f));
-	//turning off lights for now
-	coneLight->SetIntensity(0);
+	visionCone->coneLight->SetLightColor(FLinearColor(1,1,0));
+	visionCone->coneLight->SetIntensity(0.f);
+	
 	//set initial AI state to patrolling
 	currentState=patrol;
 }
@@ -199,7 +126,7 @@ void ANPCBase::turnTowards(FVector destination, float deltaSec)
 	const FVector3d displacement = destination - GetNavAgentLocation();
 	
 	//angle between the current vision direction and the target direction
-	float deltaAngle = FMath::FindDeltaAngleRadians(coneDirection.HeadingAngle(),displacement.HeadingAngle());
+	float deltaAngle = FMath::FindDeltaAngleRadians(visionCone->coneDirection.HeadingAngle(),displacement.HeadingAngle());
 	
 	//the angle to rotate towards the target in this frame
 	float deltaTurn = turnSpeed*deltaSec*FMath::Sign(deltaAngle);
@@ -207,17 +134,17 @@ void ANPCBase::turnTowards(FVector destination, float deltaSec)
 	//if the target angle will be reached within this frame, snap the direction to the target direction
 	if(abs(deltaAngle)<abs(deltaTurn))
 	{
-		coneDirection = displacement.GetSafeNormal2D();
+		visionCone->coneDirection = displacement.GetSafeNormal2D();
 	}
 	
 	//else rotate the vision cone towards the target using deltaTurn
 	else
 	{
-		coneDirection=coneDirection.RotateAngleAxis(FMath::RadiansToDegrees(deltaTurn),FVector::ZAxisVector);
+		visionCone->coneDirection=visionCone->coneDirection.RotateAngleAxis(FMath::RadiansToDegrees(deltaTurn),FVector::ZAxisVector);
 	}
 	
 	//update the spotlight to reflect this change in the vision cone
-	coneLight->SetRelativeRotation(FRotator(0,FMath::RadiansToDegrees(coneDirection.HeadingAngle()),0));
+	visionCone->coneLight->SetRelativeRotation(FRotator(0,FMath::RadiansToDegrees(visionCone->coneDirection.HeadingAngle()),0));
 }
 
 void ANPCBase::moveTowards(FVector destination,float deltaSec)
@@ -237,7 +164,7 @@ void ANPCBase::moveTowards(FVector destination,float deltaSec)
 		}
 	}
 	//if not looking at the target, turn to look at the target
-	if(!coneDirection.Equals(displacement.GetSafeNormal2D()))
+	if(!visionCone->coneDirection.Equals(displacement.GetSafeNormal2D()))
 	{
 		direction = displacement.GetSafeNormal2D();
 		turnTowards(destination,deltaSec);
@@ -324,11 +251,12 @@ void ANPCBase::Tick(float DeltaSeconds)
 		break;
 		
 	case stare:
+		visionCone->coneLight->SetLightColor(FLinearColor(1, 1-player->Suspicion/100.f, 0,0.5));
 		//after 2 seconds continue patrolling
 		if(currentAction!=wait) beginAction(wait,2.0f,FTimerDelegate::CreateUFunction( this,FName("setState"),patrol));
 
 		//if npc can't see player then break case
-		if(!detectsActor(player)) break;
+		if(!visionCone->detectsActor(player)) break;
 
 		//turn to stare at player
 		turnTowards(player->GetNavAgentLocation(),DeltaSeconds);

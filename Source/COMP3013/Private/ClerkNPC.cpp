@@ -10,10 +10,11 @@
 AClerkNPC::AClerkNPC()
 {
 	//assigning fields
-	coneRadius = 2000.0;
-	coneAngle = FMath::DegreesToRadians(45.0);
+	visionCone->coneRadius = 2000.0;
+	visionCone->coneAngle = FMath::DegreesToRadians(45.0);
+	
 	direction=FVector(1,0,0);
-	coneDirection=FVector(1,0,0);
+	
 	turnSpeed = FMath::DegreesToRadians(180);
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
@@ -99,7 +100,7 @@ void AClerkNPC::Tick(float DeltaSeconds)
 	switch(currentAction)
 	{
 	case wait:
-		setDirectionalAnimation(coneDirection,"idle");
+		setDirectionalAnimation(visionCone->coneDirection,"idle");
 		CharacterFlipbook->SetPlayRate(1);
 		break;
 		
@@ -107,14 +108,14 @@ void AClerkNPC::Tick(float DeltaSeconds)
 		if(tpath->PathPoints.Num()>1) followPath(DeltaSeconds);
 		else
 		{
-			setDirectionalAnimation(coneDirection,"idle");
+			setDirectionalAnimation(visionCone->coneDirection,"idle");
 			CharacterFlipbook->SetPlayRate(1);
 		}
 		break;
 	}
 
 	//behaviour based on observed player
-	if(!detectsActor(player)) return;
+	if(!visionCone->detectsActor(player)) return;
 	player->isSeen = true;
 	playerLastSeen = player->GetNavAgentLocation();
 	if(player->Suspicion>=100.0f) return setState(tattle);

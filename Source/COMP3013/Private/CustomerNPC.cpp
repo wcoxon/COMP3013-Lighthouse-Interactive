@@ -10,10 +10,11 @@
 
 ACustomerNPC::ACustomerNPC()
 {
-	coneRadius = 0.0f;
-	coneAngle = FMath::DegreesToRadians(45.0);
+	visionCone->coneRadius = 0.0f;
+	visionCone->coneAngle = FMath::DegreesToRadians(45.0);
+	
 	direction=FVector(1,0,0);
-	coneDirection=FVector(1,0,0);
+	
 	turnSpeed = FMath::DegreesToRadians(180);
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
@@ -102,7 +103,7 @@ void ACustomerNPC::Tick(float DeltaSeconds)
 	switch(currentAction)
 	{
 	case wait:
-		setDirectionalAnimation(coneDirection,"idle");
+		setDirectionalAnimation(visionCone->coneDirection,"idle");
 		CharacterFlipbook->SetPlayRate(1);
 		break;
 		
@@ -110,7 +111,7 @@ void ACustomerNPC::Tick(float DeltaSeconds)
 		if(tpath->PathPoints.Num()>1) followPath(DeltaSeconds);
 		else
 		{
-			setDirectionalAnimation(coneDirection,"idle");
+			setDirectionalAnimation(visionCone->coneDirection,"idle");
 			CharacterFlipbook->SetPlayRate(1);
 		}
 		break;

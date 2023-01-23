@@ -11,6 +11,7 @@
 #include "Containers/Array.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "NavigationPath.h"
+#include "VisionConeComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NPCBase.generated.h"
 
@@ -36,14 +37,13 @@ class COMP3013_API ANPCBase : public AAgent_PaperCharacter
 public:
 	ANPCBase();
 	
-	TArray<AActor*> getVisibleActors(UClass* Type);
-	bool detectsActor(AActor* actor);
-	
-	void moveTowards(FVector destination,float deltaSec) override;
-	void turnTowards(FVector destination,float deltaSec);
-	void followPath(float deltaSec);
 	UFUNCTION()
 	void pathToTarget(FVector destination);
+
+	void turnTowards(FVector destination,float deltaSec);
+	void moveTowards(FVector destination,float deltaSec) override;
+	
+	void followPath(float deltaSec);
 	
 	UFUNCTION()
 	void setState(AIState state);
@@ -51,23 +51,21 @@ public:
 	UFUNCTION()
 	void playerCrimeCommitted();
 	
-	UPROPERTY(EditAnywhere)
-	FVector coneDirection;
+	UPROPERTY(VisibleAnywhere)
+	UVisionConeComponent* visionCone;
 protected:
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	float turnSpeed;
-	float coneRadius;
-	float coneAngle;
 	
 	AIState currentState;
 	TArray<FVector> patrolPoints;
-	UPROPERTY(VisibleAnywhere)
-	USpotLightComponent* coneLight;
+	
 	UPROPERTY()
 	AGame_PaperCharacter* player;
+	
 	UPROPERTY()
 	UNavigationPath *tpath;
 	
