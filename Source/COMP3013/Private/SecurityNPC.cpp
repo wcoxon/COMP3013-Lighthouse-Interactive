@@ -9,11 +9,12 @@
 ASecurityNPC::ASecurityNPC()
 {
 	//assigning fields
-	coneRadius = 2000.0;
-	coneAngle = FMath::DegreesToRadians(60.0);
+	visionCone->coneRadius = 2000.0;
+	visionCone->coneAngle = FMath::DegreesToRadians(60.0);
+	
 	direction=FVector(1,0,0);
-	coneDirection=FVector(1,0,0);
-	turnSpeed = FMath::DegreesToRadians(120);
+	
+	turnSpeed = FMath::DegreesToRadians(360);
 	CharacterCollider->SetCapsuleRadius(6.6f);
 	
 	//Enable Render Buffer - Used for LOS colour
@@ -75,13 +76,13 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 			player->WalkSpeed = 0;
 			player->SprintOn();
 		}
-		if(detectsActor(player))
+		if(visionCone->detectsActor(player))
 		{
 			pathToTarget(player->GetNavAgentLocation());
 		}
 		else
 		{
-			tpath->PathPoints.Add(player->GetNavAgentLocation()+player->direction*600.0f);
+			tpath->PathPoints.Add(player->GetNavAgentLocation()+player->direction);
 			setState(search);
 		}
 		
@@ -93,20 +94,20 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 	switch(currentAction)
 	{
 	case wait:
-		setDirectionalAnimation(coneDirection,"idle");
+		setDirectionalAnimation(visionCone->coneDirection,"idle");
 		CharacterFlipbook->SetPlayRate(1);
 		break;
 	default:
 		if(tpath->PathPoints.Num()>1) followPath(DeltaSeconds);
 		else
 		{
-			setDirectionalAnimation(coneDirection,"idle");
+			setDirectionalAnimation(visionCone->coneDirection,"idle");
 			CharacterFlipbook->SetPlayRate(1);
 		}
 		break;
 	}
 
-	if(!detectsActor(player)) return;
+	if(!visionCone->detectsActor(player)) return;
 	player->isSeen = true;
 	if(player->Suspicion>=100.0f) return setState(pursue);
 	if(player->currentState==Run) return setState(stare);
