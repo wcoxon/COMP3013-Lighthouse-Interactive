@@ -34,7 +34,7 @@ void AItem_Base::TextOverlap(UPrimitiveComponent* OverlappedComponent, AActor* O
 {
 	if (Cast<AGame_PaperCharacter>(OtherActor))
 	{
-		Text->SetVisibility(true);
+		if (Cast<AGame_PaperCharacter>(OtherActor)->Suspicion < 100.f) Text->SetVisibility(true);
 	}
 }
 

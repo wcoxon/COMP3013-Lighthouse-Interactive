@@ -150,7 +150,14 @@ public:
 
 	//Sound
 	UPROPERTY(EditAnywhere, Category = Sound)
-	USoundCue* SoundCue;
+	USoundCue* EGCCue;
+
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundCue* SusCue;
+
+	UPROPERTY()
+	UAudioComponent* SusAudioComponent;
+	
 	
 protected:
 	
@@ -171,4 +178,5 @@ private:
 	float endPass = 0;
 
 	UTexture2D* RedLUT;
+	
 };

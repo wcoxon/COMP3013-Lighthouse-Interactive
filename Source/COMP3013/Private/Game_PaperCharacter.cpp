@@ -31,6 +31,7 @@ AGame_PaperCharacter::AGame_PaperCharacter()
 	Inventory = CreateDefaultSubobject<UPlayerInvComponent>(TEXT("Inventory"));
 	heldItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldMesh"));
 	audioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("audioComponent"));
+	SusAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("SusAudioComponent"));
 	
 	//Attach Components
 	SpringArm->SetupAttachment(CharacterCollider);
@@ -156,13 +157,20 @@ void AGame_PaperCharacter::BeginPlay()
 
 	RedLUT = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, TEXT("/Game/Textures/LUTs/RedLUT.RedLUT")));
 	
-	SoundCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Bang.Bang")));
+	EGCCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Bang.Bang")));
+	SusCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Sus.Sus")));
+	SusAudioComponent->SetSound(SusCue);
 }
 
 
 void AGame_PaperCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	//Disable Static Noise
+	if (!isSeen || Suspicion > 100.f) {
+		SusAudioComponent->Stop();
+	}
 	
 	if(inputVector.Length()>0)
 	{
@@ -226,6 +234,7 @@ void AGame_PaperCharacter::SprintOff() {
 /** When player in item_base zone, place item in held_item */
 void AGame_PaperCharacter::Pickup()
 {
+	if (Suspicion >= 100.f) return;
 	if (heldItem == nullptr)
 	{
 		TArray<AActor*> Result;
@@ -358,7 +367,7 @@ void AGame_PaperCharacter::endGamePass(float deltaTime) {
 			PostProcess->Settings.VignetteIntensity += 0.3f;
 			PostProcess->Settings.ColorGradingLUT = RedLUT;
 			SusMaxEvent.Broadcast();
-			UGameplayStatics::PlaySound2D(GetWorld(), SoundCue, 1.0f, 1.0f, 0.0f);
+			UGameplayStatics::PlaySound2D(GetWorld(), EGCCue, 1.0f, 1.0f, 0.0f);
 		}
 
 		if (endPass && EGCTimer > 0.0f) EGCTimer -= deltaTime;
@@ -385,13 +394,15 @@ void AGame_PaperCharacter::OcclusionPass() const {
 
 void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	if(!isSeen) return;
-
 	
 	switch(currentAction)
 	{
 	case conceal:
 		{
 			Suspicion += 35.0f*DeltaTime;
+			if (!SusAudioComponent->IsPlaying() && Suspicion < 100.f) {
+				SusAudioComponent->Play();
+			}
 		}
 		break;
 				
@@ -404,6 +415,9 @@ void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	case Run:
 		{
 			Suspicion+= 20.0f*DeltaTime;
+			if (!SusAudioComponent->IsPlaying() && Suspicion < 100.f) {
+				SusAudioComponent->Play();
+			}
 		}
 		break;
 				
@@ -412,4 +426,11 @@ void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	}
 	
 	SusMeterChangeEvent.Broadcast();
+
+	if ((currentState != Run && currentAction != conceal) || Suspicion > 100.f) {
+		SusAudioComponent->Stop();
+	}
+	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
+	//had an npc detect me since. i'll now know at the beginning of next tick if one of the npcs knocked this back to true
+	isSeen = false;
 }

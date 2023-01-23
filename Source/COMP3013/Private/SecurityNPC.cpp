@@ -6,6 +6,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperFlipbook.h"
+#include "Sound/SoundCue.h"
+
 ASecurityNPC::ASecurityNPC()
 {
 	//assigning fields
@@ -60,6 +62,8 @@ void ASecurityNPC::BeginPlay()
 	{
 		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),2000));
 	}
+
+	PunchSoundCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/SoundPunch.SoundPunch")));
 }
 void ASecurityNPC::Tick(float DeltaSeconds)
 {
@@ -68,12 +72,14 @@ void ASecurityNPC::Tick(float DeltaSeconds)
 	switch(currentState)
 	{
 	case pursue:
-		if(GetDistanceTo(player)<300.0f)
+		if(GetDistanceTo(player)<300.0f && !Caught)
 		{
+			Caught = true;
 			//ig they catch you in here
 			UE_LOG(LogTemp, Log, TEXT("Caught you lose"));
 			player->moveSpeed = 0;
 			player->WalkSpeed = 0;
+			UGameplayStatics::PlaySound2D(GetWorld(), PunchSoundCue, 1.0f, 1.0f, 0.0f);
 			player->SprintOn();
 		}
 		if(visionCone->detectsActor(player))

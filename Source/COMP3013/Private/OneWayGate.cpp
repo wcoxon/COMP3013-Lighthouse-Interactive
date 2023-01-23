@@ -89,13 +89,7 @@ void AOneWayGate::Tick(float DeltaTime)
 	if (GateState == EGateState::Idle && currentAngle != defaultAngle) {
 		GateState = EGateState::Closing;
 	}
-
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("CurrentAngle: %f"), abs(currentAngle)));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("TargetAngleUp: %f"), abs(targetAngleUp)));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("TargetAngleDown: %f"), abs(targetAngleDown)));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Timer: %f"), Timer));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("GateState: %d"), GateState));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Up: %d"), Up));
+	
 }
 
 
