@@ -19,12 +19,10 @@ AEntryDoors::AEntryDoors()
 
 void AEntryDoors::OnFSusMaxBroadcast() {
 	DoorMesh->SetWorldRotation(FRotator(0,DoorCloseAngle,0));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Door Closed"));
 }
 
 void AEntryDoors::OnFEGCOverBroadcast() {
 	DoorMesh->SetWorldRotation(FRotator(0,DoorOpenAngle,0));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Door Opened"));
 }
 
 // Called when the game starts or when spawned

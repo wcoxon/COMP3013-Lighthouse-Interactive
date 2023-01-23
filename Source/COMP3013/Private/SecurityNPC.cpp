@@ -1,11 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SecurityNPC.h"
+
+#include "MainGameInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperFlipbook.h"
+#include "PlayerInvComponent.h"
 #include "Sound/SoundCue.h"
 
 ASecurityNPC::ASecurityNPC()
@@ -82,7 +85,19 @@ void ASecurityNPC::BeginPlay()
 void ASecurityNPC::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
+
+	if (Caught) {
+		transTimer -= DeltaSeconds;
+		if (transTimer <= 0.f) {
+			UMainGameInstance* GI = Cast<UMainGameInstance>(GetGameInstance());
+			float valuables = 0.0f;
+			for (auto Item : player->Inventory->Items) {
+				valuables += Item->Price;
+			}
+			if (GI) GI->DeductMoney(valuables * 0.8);
+			UGameplayStatics::OpenLevel(GetWorld(), "TransitionLevel", true);
+		}
+	}
 	switch(currentState)
 	{
 	case pursue:

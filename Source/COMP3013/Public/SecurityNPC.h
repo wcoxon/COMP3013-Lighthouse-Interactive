@@ -30,4 +30,6 @@ private:
 	USoundCue* TriggerSoundCue;
 	
 	bool Caught = false;
+
+	float transTimer = 1.0f;
 };

@@ -362,7 +362,6 @@ void AGame_PaperCharacter::endGamePass(float deltaTime) {
 
 	if (endPass < 2) {
 		if (Suspicion >= 100.0f && !endPass) {
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("EGC"));
 			endPass = 1;
 			DirectionalLight->GetLightComponent()->SetIntensity(0.0f);
 			PostProcess->Settings.VignetteIntensity += 0.3f;
