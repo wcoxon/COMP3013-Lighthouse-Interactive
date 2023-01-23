@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PaperFlipbook.h"
 #include "PaperFlipbookComponent.h"
+#include "Sound/SoundCue.h"
 
 AClerkNPC::AClerkNPC()
 {
@@ -27,6 +28,10 @@ AClerkNPC::AClerkNPC()
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 20*moveSpeed;
 	CharacterMovementComp->BrakingDecelerationWalking = 10*moveSpeed;
+
+	TattleaudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("TattleAudioComponent"));
+	TattleaudioComponent->SetupAttachment(RootComponent);
+	TattleaudioComponent->bAutoActivate = false;
 }
 void AClerkNPC::BeginPlay()
 {
@@ -64,6 +69,9 @@ void AClerkNPC::BeginPlay()
 		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),2000));
 	}
 	securityGuard = Cast<ASecurityNPC>(UGameplayStatics::GetActorOfClass(GetWorld(),ASecurityNPC::StaticClass()));
+
+	TattleSound = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Tattle.Tattle")));
+	//TattleaudioComponent->SetSound(TattleSound);
 }
 void AClerkNPC::Tick(float DeltaSeconds)
 {
@@ -118,7 +126,10 @@ void AClerkNPC::Tick(float DeltaSeconds)
 	if(!visionCone->detectsActor(player)) return;
 	player->isSeen = true;
 	playerLastSeen = player->GetNavAgentLocation();
-	if(player->Suspicion>=100.0f) return setState(tattle);
+	if(player->Suspicion>=100.0f) {
+		TattleaudioComponent->Play();
+		return setState(tattle);
+	}
 	if(player->currentState==Run || player->currentAction==conceal) return setState(stare);
 	
 }

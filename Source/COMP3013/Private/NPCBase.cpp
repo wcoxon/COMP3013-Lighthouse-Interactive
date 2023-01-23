@@ -50,7 +50,7 @@ ANPCBase::ANPCBase()
 
 	CharacterCollider->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Ignore);
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-	audioSource->VolumeMultiplier=0.f;
+	audioSource->VolumeMultiplier=1.f;
 	
 	
 }

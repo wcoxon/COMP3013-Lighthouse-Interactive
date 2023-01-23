@@ -152,7 +152,8 @@ void AGame_PaperCharacter::BeginPlay()
 	SetActorScale3D(FVector(actorScale/spriteRes));
 
 	audioSource->Sound = LoadObject<USoundBase>(NULL,TEXT("/Game/ThirdParty/Sounds/footstep.footstep"),NULL,LOAD_None,NULL);
-
+	audioSource->VolumeMultiplier = 0.7f;
+	
 	isSeen=false;
 
 	RedLUT = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, TEXT("/Game/Textures/LUTs/RedLUT.RedLUT")));

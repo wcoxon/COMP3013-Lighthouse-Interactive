@@ -93,6 +93,8 @@ void ACustomerNPC::BeginPlay()
 	{
 		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),patrolPoints[x],3000));
 	}
+
+	audioSource->VolumeMultiplier=0.f;
 	
 }
 

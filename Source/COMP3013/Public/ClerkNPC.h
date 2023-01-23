@@ -16,6 +16,9 @@ class COMP3013_API AClerkNPC : public ANPCBase
 	GENERATED_BODY()
 public:
 	AClerkNPC();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AudioComponent")
+	UAudioComponent* TattleaudioComponent;
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -24,4 +27,6 @@ private:
 	ASecurityNPC* securityGuard;
 	UPROPERTY()
 	FVector playerLastSeen;
+	UPROPERTY()
+	USoundCue* TattleSound;
 };
