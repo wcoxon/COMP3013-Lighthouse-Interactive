@@ -147,7 +147,6 @@ void ACamera::setState(EECameraState newState)
 		IdleCurrentDuration = 0.0f;
 		//Set duration between Min/Max
 		IdleDuration = FMath::FRandRange(MinWait, MaxWait);
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Idle Duration: %f"), IdleDuration));
 		break;
 	case EECameraState::Rotating:
 		bIsClockwise = !bIsClockwise;
