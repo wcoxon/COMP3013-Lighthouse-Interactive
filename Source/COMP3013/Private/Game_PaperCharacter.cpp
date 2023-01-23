@@ -161,6 +161,10 @@ void AGame_PaperCharacter::BeginPlay()
 	EGCCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Bang.Bang")));
 	SusCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Sus.Sus")));
 	SusAudioComponent->SetSound(SusCue);
+
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->PlayerInput->FlushPressedKeys();
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->bShowMouseCursor = false;
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetInputMode(FInputModeGameOnly());
 }
 
 
@@ -169,6 +173,7 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	//Disable Static Noise
+	SusAudioComponent->SetPitchMultiplier(Suspicion /50.f);
 	if (!isSeen || Suspicion > 100.f) {
 		SusAudioComponent->Stop();
 	}
