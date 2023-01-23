@@ -113,6 +113,7 @@ void ANPCBase::BeginPlay()
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(),0));
 	player->ConcealItemEvent.__Internal_AddDynamic(this,&ANPCBase::playerCrimeCommitted,TEXT("playerCrimeCommitted"));
 
+	visionCone->coneLight->SetLightColor(FLinearColor(1,1,0));
 	visionCone->coneLight->SetIntensity(0.f);
 	
 	//set initial AI state to patrolling

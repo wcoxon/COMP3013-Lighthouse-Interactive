@@ -2,7 +2,7 @@
 
 
 #include "Camera.h"
-
+#include "Game_PaperCharacter.h"
 #include "CustomerNPC.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -26,7 +26,6 @@ ACamera::ACamera()
 	
 	CameraBase = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CameraBase"));
 	CameraBase->SetupAttachment(RootComponent);
-	CameraBase->SetMobility(EComponentMobility::Movable);
 
 	CameraBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CameraBody"));
 	CameraBody->SetupAttachment(CameraBase);
@@ -68,9 +67,11 @@ void ACamera::BeginPlay()
 
 	player = Cast<AGame_PaperCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
 	securityGuard = Cast<ASecurityNPC>(UGameplayStatics::GetActorOfClass(GetWorld(),ASecurityNPC::StaticClass()));
-	player->ConcealItemEvent.__Internal_AddDynamic(this,&ACamera::playerCrimeCommitted,TEXT("playerCrimeCommitted"));
+	//player->ConcealItemEvent.AddDynamic(this,&ACamera::playerCrimeCommitted);
 
 	//coneLight->CastShadows = false;
+
+	
 }
 
 // Called every frame
@@ -101,7 +102,7 @@ void ACamera::StateManager(float deltaTime)
 		if (bIsClockwise)
 		{
 			turnTowards(Angle1, deltaTime, turnSpeed);
-			if (FMath::IsNearlyEqual(CameraBody->GetComponentRotation().Yaw, Angle1, 0.1f))
+			if (FMath::IsNearlyEqual(CameraBody->GetRelativeRotation().Yaw, Angle1, 0.1f))
 			{
 				setState(EECameraState::Idle);
 			}
@@ -109,7 +110,7 @@ void ACamera::StateManager(float deltaTime)
 		else
 		{
 			turnTowards(Angle2, deltaTime, turnSpeed);
-			if (FMath::IsNearlyEqual(CameraBody->GetComponentRotation().Yaw, Angle2, 0.1f))
+			if (FMath::IsNearlyEqual(CameraBody->GetRelativeRotation().Yaw, Angle2, 0.1f))
 			{
 				setState(EECameraState::Idle);
 			}
@@ -121,7 +122,7 @@ void ACamera::StateManager(float deltaTime)
 			FVector playerLocation = player->GetActorLocation();
 			FVector toPlayer = playerLocation - cameraLocation;
 			float angle = FMath::RadiansToDegrees(FMath::Atan2(toPlayer.Y, toPlayer.X));
-			turnTowards(angle, deltaTime, 45.f);
+			turnTowards(angle-GetActorRotation().Yaw, deltaTime, 45.f);
 			currentUnfollowingDuration = 0.f;
 		} else {
 			currentUnfollowingDuration += deltaTime;
@@ -169,9 +170,9 @@ void ACamera::setState(EECameraState newState)
 /* Lerp between the input angle and current angle */
 void ACamera::turnTowards(float target, float deltaTime, float speed)
 {
-	CurrentAngle = CameraBody->GetComponentRotation().Yaw;
+	CurrentAngle = CameraBody->GetRelativeRotation().Yaw;
 	CurrentAngle = FMath::FixedTurn(CurrentAngle, target, deltaTime * speed);
-	CameraBody->SetWorldRotation(FRotator(-20.f, CurrentAngle, 0.f));
+	CameraBody->SetRelativeRotation(FRotator(-20.f, CurrentAngle, 0.f));
 	visionCone->coneDirection = CameraBody->GetForwardVector();
 }
 
