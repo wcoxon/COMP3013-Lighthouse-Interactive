@@ -10,7 +10,7 @@
 AClerkNPC::AClerkNPC()
 {
 	//assigning fields
-	visionCone->coneRadius = 2000.0;
+	visionCone->coneRadius = 1500.0;
 	visionCone->coneAngle = FMath::DegreesToRadians(45.0);
 	
 	direction=FVector(1,0,0);
@@ -31,6 +31,7 @@ AClerkNPC::AClerkNPC()
 void AClerkNPC::BeginPlay()
 {
 	Super::BeginPlay();
+	player->ConcealItemEvent.AddDynamic(this,&ANPCBase::playerCrimeCommitted);
 
 	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkLeft64.EmployeeWalkLeft64"), NULL, LOAD_None, NULL));
 	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Clerk/WalkAnimation/EmployeeWalkRight64.EmployeeWalkRight64"), NULL, LOAD_None, NULL));
@@ -58,10 +59,11 @@ void AClerkNPC::BeginPlay()
 	UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(GetWorld());
 	tpath=navSys->FindPathToLocationSynchronously(GetWorld(),GetNavAgentLocation(),GetNavAgentLocation());
 	
-	int patrolCount = 2;
-	for(int x=0;x<patrolCount;x++)
+	int patrolCount = 3;
+	patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),3000));
+	for(int x=0;x<patrolCount-1;x++)
 	{
-		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),GetNavAgentLocation(),2000));
+		patrolPoints.Add(navSys->GetRandomReachablePointInRadius(GetWorld(),patrolPoints[x],3000));
 	}
 	securityGuard = Cast<ASecurityNPC>(UGameplayStatics::GetActorOfClass(GetWorld(),ASecurityNPC::StaticClass()));
 }

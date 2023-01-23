@@ -23,7 +23,7 @@ ASecurityNPC::ASecurityNPC()
 	//CharacterFlipbook->SetRenderCustomDepth(true);
 	
 	//setting up movement properties
-	moveSpeed = 800;
+	moveSpeed = 600;
 	CharacterMovementComp->MovementMode=MOVE_NavWalking;
 	CharacterMovementComp->MaxWalkSpeed = moveSpeed;
 	CharacterMovementComp->MaxAcceleration = 20*moveSpeed;
@@ -32,6 +32,7 @@ ASecurityNPC::ASecurityNPC()
 void ASecurityNPC::BeginPlay()
 {
 	Super::BeginPlay();
+	player->ConcealItemEvent.AddDynamic(this,&ANPCBase::playerCrimeCommitted);
 
 	animations.Add(FString("walkLeft"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkLeft.SecurityWalkLeft"), NULL, LOAD_None, NULL));
 	animations.Add(FString("walkRight"),LoadObject<UPaperFlipbook>(NULL, TEXT("/Game/Characters/Sprites/Security/Walk/SecurityWalkRight.SecurityWalkRight"), NULL, LOAD_None, NULL));
