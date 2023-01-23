@@ -108,7 +108,7 @@ void AOneWayGate::BoundBoxTopEnter(UPrimitiveComponent* OverlappedComponent, AAc
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 
 	if (OtherActor->IsA(ACustomerNPC::StaticClass()) || OtherActor->IsA(AClerkNPC::StaticClass()) || OtherActor->IsA(AGame_PaperCharacter::StaticClass()) || OtherActor->IsA(ASecurityNPC::StaticClass())) {
-		if (GateState != EGateState::Open || GateState != EGateState::Opening) {
+		if (GateState != EGateState::Open && GateState != EGateState::Opening) {
 			GateState = EGateState::Opening;
 			Up = true;
 		}
@@ -125,7 +125,7 @@ void AOneWayGate::BoundBoxTopExit(UPrimitiveComponent* OverlappedComponent, AAct
 void AOneWayGate::BoundBoxBottomEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	if (OtherActor->IsA(ACustomerNPC::StaticClass()) || OtherActor->IsA(AClerkNPC::StaticClass()) || OtherActor->IsA(AGame_PaperCharacter::StaticClass()) || OtherActor->IsA(ASecurityNPC::StaticClass())) {
-		if (GateState != EGateState::Open || GateState != EGateState::Opening) {
+		if (GateState != EGateState::Open && GateState != EGateState::Opening) {
 			GateState = EGateState::Opening;
 			Up = false;
 		}
