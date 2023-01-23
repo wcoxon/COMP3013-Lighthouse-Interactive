@@ -16,7 +16,9 @@
 #include "PlayerInvComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/AudioComponent.h"
+#include "Components/LightComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 // Called when the game starts or when spawned
 AGame_PaperCharacter::AGame_PaperCharacter()
@@ -133,6 +135,7 @@ void AGame_PaperCharacter::BeginPlay()
 	CharacterFlipbook->SetFlipbook(animations["idleUp"]);
 
 	PostProcess = Cast<APostProcessVolume>(UGameplayStatics::GetActorOfClass(GetWorld(), APostProcessVolume::StaticClass()));
+	DirectionalLight = Cast<ADirectionalLight>(UGameplayStatics::GetActorOfClass(GetWorld(), ADirectionalLight::StaticClass()));
 	
 	float spriteRes = 64.0;
 	float spriteGroundLevel = 5.0;
@@ -151,6 +154,9 @@ void AGame_PaperCharacter::BeginPlay()
 
 	isSeen=false;
 
+	RedLUT = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, TEXT("/Game/Textures/LUTs/RedLUT.RedLUT")));
+	
+	SoundCue = Cast<USoundCue>(StaticLoadObject(USoundCue::StaticClass(), NULL, TEXT("/Game/ThirdParty/Sounds/Bang.Bang")));
 }
 
 
@@ -183,11 +189,10 @@ void AGame_PaperCharacter::Tick(float DeltaTime)
 
 	SusMeterChange(DeltaTime);
 
-	//endGamePass();
-
-	//resets isSeen to false, it's more like "was seen since last suspicion checks" so like now ive done them i haven't
-	//had an npc detect me since. i'll now know at the beginning of next tick if one of the npcs knocked this back to true
+	endGamePass(DeltaTime);
+	
 	isSeen = false;
+
 }
 
 //UNREAL DEFAULT FUNCTION - Bind inputs to functions
@@ -343,12 +348,27 @@ void AGame_PaperCharacter::StateManager(float deltatime) {
 	
 }
 
-/*void AGame_PaperCharacter::endGamePass() {
-	if (Suspicion >= 100.0f) {
-		//PostProcess->Settings.VignetteIntensity += 0.10f;
-		
+void AGame_PaperCharacter::endGamePass(float deltaTime) {
+
+	if (endPass < 2) {
+		if (Suspicion >= 100.0f && !endPass) {
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("EGC"));
+			endPass = 1;
+			DirectionalLight->GetLightComponent()->SetIntensity(0.0f);
+			PostProcess->Settings.VignetteIntensity += 0.3f;
+			PostProcess->Settings.ColorGradingLUT = RedLUT;
+			SusMaxEvent.Broadcast();
+			UGameplayStatics::PlaySound2D(GetWorld(), SoundCue, 1.0f, 1.0f, 0.0f);
+		}
+
+		if (endPass && EGCTimer > 0.0f) EGCTimer -= deltaTime;
+
+		if (EGCTimer <= 0.0f && endPass) {
+			EGCOverEvent.Broadcast();
+			endPass = 2;
+		}
 	}
-}*/
+}
 
 void AGame_PaperCharacter::OcclusionPass() const {
 	
@@ -365,11 +385,14 @@ void AGame_PaperCharacter::OcclusionPass() const {
 
 void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	if(!isSeen) return;
+
 	
 	switch(currentAction)
 	{
 	case conceal:
-		Suspicion += 25.0f*DeltaTime;
+		{
+			Suspicion += 35.0f*DeltaTime;
+		}
 		break;
 				
 	default:
@@ -379,7 +402,9 @@ void AGame_PaperCharacter::SusMeterChange(float DeltaTime) {
 	switch (currentState)
 	{
 	case Run:
-		Suspicion+= 10.0f*DeltaTime;
+		{
+			Suspicion+= 20.0f*DeltaTime;
+		}
 		break;
 				
 	default:

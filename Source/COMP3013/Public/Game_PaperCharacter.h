@@ -10,15 +10,13 @@
 #include "PaperFlipbookComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/PostProcessComponent.h"
+#include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
 #include "GameFramework/SpringArmComponent.h"
 
 #include "Game_PaperCharacter.generated.h"
 
-/**
- * 
- */
-
+class USoundCue;
 //Direction Enums
 UENUM(BlueprintType)
 enum class Direction : uint8 {
@@ -39,15 +37,12 @@ enum MovementState{
 	Run        UMETA(DisplayName="Running"),
 };
 
-/*DECLARE_DYNAMIC_MULTICAST_DELEGATE(FConcealItem);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRefreshItemHUD);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractionBar);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSuspicionMeterChange);*/
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FConcealItem);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRefreshItemHUD);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInteractionBar);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSusMeterChange);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSusMax);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEGCOver);
 
 UCLASS()
 class COMP3013_API AGame_PaperCharacter : public AAgent_PaperCharacter
@@ -81,6 +76,10 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	APostProcessVolume* PostProcess;
 
+	//Directional Light
+	UPROPERTY(VisibleAnywhere)
+	ADirectionalLight* DirectionalLight;
+
 	//Animations
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
@@ -93,6 +92,7 @@ public:
 	void SprintOff();
 	void Pickup();
 	void OpenInventory();
+	
 	//method to bind to conceal button
 	void Conceal();
 	FVector inputVector;
@@ -130,6 +130,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FConcealItem ConcealItemEvent;
+
+	UPROPERTY(BlueprintAssignable)
+	FSusMax SusMaxEvent;
+
+	UPROPERTY(BlueprintAssignable)
+	FEGCOver EGCOverEvent;
 	//FInteractionBar actionProgressEvent;
 
 	//UPROPERTY(BlueprintAssignable)
@@ -138,6 +144,13 @@ public:
 	//represents whether the player was seen since the last tick
 	UPROPERTY(BlueprintReadOnly)
 	bool isSeen = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	float EGCTimer = 30.f;
+
+	//Sound
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundCue* SoundCue;
 	
 protected:
 	
@@ -152,5 +165,10 @@ private:
 	void SusMeterChange(float DeltaTime);
 
 	AController* SavedController;
+
+	void endGamePass(float deltaTime);
 	
+	float endPass = 0;
+
+	UTexture2D* RedLUT;
 };
