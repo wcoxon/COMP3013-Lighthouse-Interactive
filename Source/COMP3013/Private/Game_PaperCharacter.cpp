@@ -399,7 +399,7 @@ void AGame_PaperCharacter::endGamePass(float deltaTime) {
 			endPass = 1;
 			DirectionalLight->GetLightComponent()->SetIntensity(0.0f);
 			PostProcess->Settings.VignetteIntensity += 0.3f;
-			PostProcess->Settings.ColorGradingLUT = RedLUT;
+			//PostProcess->Settings.ColorGradingLUT = RedLUT;
 			SusMaxEvent.Broadcast();
 			UGameplayStatics::PlaySound2D(GetWorld(), EGCCue, 1.0f, 1.0f, 0.0f);
 		}
